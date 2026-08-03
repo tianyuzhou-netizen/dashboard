@@ -1,0 +1,986 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>汽车品牌销售大区经营诊断数据仪表盘</title>
+<style>
+:root {
+  --bg-primary: #f5f6f8; --bg-secondary: #fff; --bg-card: #fff;
+  --bg-sidebar: #1a1f36; --border: #e2e5ea; --border-light: #eef0f4;
+  --text-primary: #1a1f36; --text-secondary: #5a6170; --text-muted: #9199a8;
+  --accent: #3b6df0; --accent-hover: #2b54d4; --accent-light: #eef3ff;
+  --green: #16a34a; --green-bg: #f0fdf4; --green-border: #bbf7d0;
+  --yellow: #ca8a04; --yellow-bg: #fefce8; --yellow-border: #fef08a;
+  --red: #dc2626; --red-bg: #fef2f2; --red-border: #fecaca;
+  --sidebar-width: 270px; --topbar-height: 56px;
+  --shadow: 0 1px 3px rgba(0,0,0,0.06), 0 1px 2px rgba(0,0,0,0.04);
+  --shadow-hover: 0 4px 12px rgba(0,0,0,0.08);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;background:var(--bg-primary);color:var(--text-primary);display:flex;height:100vh;overflow:hidden;}
+
+.sidebar{width:var(--sidebar-width);min-width:var(--sidebar-width);background:var(--bg-sidebar);display:flex;flex-direction:column;z-index:10;color:#c8cdd8;}
+.sidebar-header{padding:20px 18px 16px;border-bottom:1px solid rgba(255,255,255,0.08);}
+.sidebar-header .logo{font-size:12px;font-weight:700;color:#6b8cff;letter-spacing:1px;text-transform:uppercase;}
+.sidebar-header .title{font-size:13px;color:#8b92a5;margin-top:4px;line-height:1.5;}
+.version-badge{display:inline-block;margin-top:8px;padding:2px 8px;font-size:10px;font-weight:700;color:#fff;background:linear-gradient(135deg,#6b8cff,#4a6cf7);border-radius:4px;letter-spacing:0.5px;}
+.sidebar-nav{flex:1;overflow-y:auto;padding:8px 0;}
+.nav-group{margin-bottom:2px;}
+.nav-group-header{display:flex;align-items:center;gap:10px;padding:9px 18px;cursor:pointer;color:#a8b0c0;font-size:13px;font-weight:500;transition:all 0.15s;user-select:none;}
+.nav-group-header:hover{background:rgba(107,140,255,0.12);color:#d0d5e0;}
+.nav-group-header.active{background:rgba(107,140,255,0.18);color:#fff;border-right:3px solid #6b8cff;}
+.nav-group-header .icon{width:18px;text-align:center;font-size:13px;}
+.nav-group-header .arrow{margin-left:auto;font-size:9px;transition:transform 0.2s;opacity:0.5;}
+.nav-group-header.expanded .arrow{transform:rotate(90deg);}
+.nav-sub{max-height:0;overflow:hidden;transition:max-height 0.3s ease;}
+.nav-sub.open{max-height:800px;overflow-y:auto;}
+.nav-sub-item{display:flex;align-items:center;gap:8px;padding:7px 18px 7px 46px;cursor:pointer;font-size:13px;color:#8b92a5;transition:all 0.15s;user-select:none;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.nav-sub-item:hover{background:rgba(107,140,255,0.08);color:#c0c8d8;}
+.nav-sub-item.active{background:rgba(107,140,255,0.12);color:#fff;}
+.nav-sub-item .dot{width:5px;height:5px;border-radius:50%;flex-shrink:0;}
+.nav-sub-item .dot.green{background:#4ade80;}.nav-sub-item .dot.yellow{background:#facc15;}.nav-sub-item .dot.red{background:#f87171;}
+.nav-sub-item .badge{margin-left:auto;font-size:10px;padding:1px 6px;border-radius:8px;background:rgba(255,255,255,0.08);color:#8b92a5;}
+.sidebar-footer{padding:12px 18px;border-top:1px solid rgba(255,255,255,0.08);font-size:12px;color:#5a6070;display:flex;justify-content:space-between;}
+/* Dealer sidebar */
+.nav-dealer-region{display:flex;align-items:center;gap:8px;padding:7px 18px 7px 36px;cursor:pointer;font-size:13px;color:#8b92a5;transition:all 0.15s;user-select:none;}
+.nav-dealer-region:hover{background:rgba(107,140,255,0.08);color:#c0c8d8;}
+.nav-dealer-region.active{background:rgba(107,140,255,0.15);color:#fff;font-weight:600;}
+.nav-dealer-region .badge{margin-left:auto;font-size:10px;padding:1px 6px;border-radius:8px;background:rgba(255,255,255,0.08);color:#8b92a5;}
+.nav-dealer-subs{max-height:0;overflow:hidden;transition:max-height 0.3s ease;}
+.nav-dealer-subs.open{max-height:800px;overflow-y:auto;}
+
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;}
+.topbar{height:var(--topbar-height);min-height:var(--topbar-height);background:var(--bg-secondary);border-bottom:1px solid var(--border);display:flex;align-items:center;justify-content:space-between;padding:0 24px;}
+.breadcrumb{font-size:12px;color:var(--text-muted);}.breadcrumb span{color:var(--text-secondary);}.breadcrumb .sep{margin:0 6px;}.breadcrumb .current{color:var(--text-primary);font-weight:600;}
+.topbar-right{display:flex;align-items:center;gap:14px;}
+.month-badge{background:var(--bg-primary);border:1px solid var(--border);padding:5px 12px;border-radius:6px;font-size:11px;color:var(--text-muted);}
+.role-selector select{appearance:none;background:var(--bg-secondary);border:1px solid var(--border);color:var(--text-primary);padding:7px 32px 7px 14px;border-radius:6px;font-size:12px;cursor:pointer;outline:none;background-image:url("data:image/svg+xml,%3Csvg width='10' height='6' viewBox='0 0 10 6' fill='none' xmlns='http://www.w3.org/2000/svg'%3E%3Cpath d='M1 1l4 4 4-4' stroke='%23919aa8' stroke-width='1.5' stroke-linecap='round'/%3E%3C/svg%3E");background-repeat:no-repeat;background-position:right 10px center;}
+.role-selector select:hover{border-color:var(--accent);}
+.content{flex:1;overflow-y:auto;padding:20px 24px;}
+.page{display:none;}.page.active{display:block;animation:fadeIn 0.25s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px);}to{opacity:1;transform:translateY(0);}}
+
+.summary-bar{display:flex;gap:14px;margin-bottom:20px;}
+.summary-item{flex:1;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:16px 18px;display:flex;align-items:center;gap:14px;box-shadow:var(--shadow);}
+.summary-item .count{font-size:28px;font-weight:700;line-height:1;}.summary-item .count.red{color:var(--red);}.summary-item .count.yellow{color:var(--yellow);}.summary-item .count.green{color:var(--green);}.summary-item .label{font-size:12px;color:var(--text-muted);}
+
+.kpi-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:14px;margin-bottom:20px;}
+.kpi-card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:18px;cursor:pointer;transition:all 0.2s;position:relative;overflow:hidden;box-shadow:var(--shadow);}
+.kpi-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:var(--shadow-hover);}
+.kpi-card .status-bar{position:absolute;top:0;left:0;right:0;height:3px;}
+.kpi-card .status-bar.green{background:var(--green);}.kpi-card .status-bar.yellow{background:var(--yellow);}.kpi-card .status-bar.red{background:var(--red);}
+.kpi-card .kpi-header{display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px;margin-top:4px;}
+.kpi-card .kpi-name{font-size:13px;font-weight:600;color:var(--text-primary);line-height:1.4;}
+.kpi-card .kpi-badge{padding:2px 10px;border-radius:10px;font-size:10px;font-weight:600;flex-shrink:0;}
+.kpi-card .kpi-badge.green{background:var(--green-bg);color:var(--green);}.kpi-card .kpi-badge.yellow{background:var(--yellow-bg);color:var(--yellow);}.kpi-card .kpi-badge.red{background:var(--red-bg);color:var(--red);}
+.kpi-card .kpi-values{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;}
+.kpi-card .kpi-current{font-size:26px;font-weight:700;}.kpi-card .kpi-current.green{color:var(--green);}.kpi-card .kpi-current.yellow{color:var(--yellow);}.kpi-card .kpi-current.red{color:var(--red);}
+.kpi-card .kpi-target{font-size:11px;color:var(--text-muted);}
+.kpi-card .kpi-footer{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:var(--text-muted);}
+.kpi-card .kpi-role{color:var(--accent);cursor:pointer;}.kpi-card .kpi-role:hover{text-decoration:underline;}
+
+.section-title{font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border-light);display:flex;align-items:center;gap:8px;}
+.section-title .dot-icon{width:8px;height:8px;border-radius:50%;}.section-title .dot-icon.red{background:var(--red);}.section-title .dot-icon.yellow{background:var(--yellow);}.section-title .dot-icon.green{background:var(--green);}
+
+.data-table{width:100%;border-collapse:collapse;font-size:12px;margin-bottom:16px;background:var(--bg-card);border-radius:8px;overflow:hidden;box-shadow:var(--shadow);border:1px solid var(--border);}
+.data-table th{background:#f8f9fb;padding:10px 14px;text-align:left;color:var(--text-muted);font-weight:500;font-size:11px;border-bottom:1px solid var(--border);}
+.data-table td{padding:9px 14px;border-bottom:1px solid var(--border-light);color:var(--text-secondary);}
+.data-table tr:last-child td{border-bottom:none;}.data-table tr:hover td{background:#f8f9fb;}
+.drillable-row{cursor:pointer;}.drillable-row:hover td{background:#e8f0fe;}.drillable-row td:last-child::after{content:' ▸';color:var(--accent);font-weight:700;}
+.no-drill{cursor:default;}
+.task-link{color:var(--accent);cursor:pointer;font-weight:500;}.task-link:hover{text-decoration:underline;}
+.status-pill{display:inline-block;padding:2px 10px;border-radius:10px;font-size:10px;font-weight:600;}
+.status-pill.green{background:var(--green-bg);color:var(--green);}.status-pill.yellow{background:var(--yellow-bg);color:var(--yellow);}.status-pill.red{background:var(--red-bg);color:var(--red);}
+
+.drilldown-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.3);z-index:100;justify-content:center;align-items:center;}
+.drilldown-overlay.open{display:flex;}
+.drilldown-panel{background:var(--bg-card);border-radius:14px;width:92%;max-width:960px;max-height:82vh;overflow-y:auto;box-shadow:0 20px 60px rgba(0,0,0,0.15);padding:28px;}
+.drilldown-panel .panel-header{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;padding-bottom:14px;border-bottom:1px solid var(--border-light);}
+.drilldown-panel .panel-title{font-size:16px;font-weight:700;}
+.drilldown-panel .panel-task-link{font-size:12px;font-weight:500;color:var(--accent);cursor:pointer;margin-left:8px;padding:2px 10px;border:1px solid var(--accent);border-radius:4px;transition:all .2s;white-space:nowrap;}
+.drilldown-panel .panel-task-link:hover{background:var(--accent);color:#fff;}
+.drilldown-panel .panel-close{background:none;border:none;font-size:20px;cursor:pointer;color:var(--text-muted);padding:4px 8px;border-radius:4px;}
+.drilldown-panel .panel-close:hover{background:var(--bg-primary);color:var(--text-primary);}
+.panel-stats{display:flex;gap:12px;margin-bottom:18px;flex-wrap:wrap;}
+.panel-stat{flex:1;min-width:100px;background:var(--bg-primary);border-radius:8px;padding:14px;text-align:center;}
+.panel-stat .stat-value{font-size:22px;font-weight:700;}
+.panel-stat .stat-label{font-size:11px;color:var(--text-muted);margin-top:2px;}
+.panel-stat .stat-value.red{color:var(--red);}.panel-stat .stat-value.yellow{color:var(--yellow);}.panel-stat .stat-value.green{color:var(--green);}
+
+.insight-box{background:var(--accent-light);border:1px solid #c7d5ff;border-radius:8px;padding:14px 18px;margin-bottom:18px;font-size:12px;color:var(--accent-hover);line-height:1.7;}
+.insight-box.warn{background:var(--red-bg);border-color:var(--red-border);color:var(--red);}
+.insight-box .insight-title{font-weight:700;margin-bottom:4px;font-size:13px;}
+
+.bar-row{display:flex;align-items:center;gap:10px;margin-bottom:6px;}
+.bar-row .bar-label{width:100px;font-size:11px;text-align:right;color:var(--text-muted);flex-shrink:0;}
+.bar-row .bar-track{flex:1;height:20px;background:var(--bg-primary);border-radius:4px;overflow:hidden;position:relative;}
+.bar-row .bar-fill{height:100%;border-radius:4px;transition:width 0.4s;}
+.bar-row .bar-fill.red{background:var(--red);}.bar-row .bar-fill.yellow{background:var(--yellow);}.bar-row .bar-fill.green{background:var(--green);}
+.bar-row .bar-val{width:50px;font-size:11px;font-weight:600;flex-shrink:0;}
+
+.task-list{display:flex;flex-direction:column;gap:8px;}
+.task-item{background:var(--bg-card);border:1px solid var(--border);border-radius:8px;padding:12px 16px;display:flex;align-items:center;gap:14px;cursor:pointer;transition:all 0.15s;box-shadow:var(--shadow);}
+.task-item:hover{border-color:var(--accent);}
+.task-item .task-id{font-size:11px;font-weight:700;padding:3px 10px;border-radius:4px;min-width:48px;text-align:center;}
+.task-item .task-id.p1{background:var(--red-bg);color:var(--red);}.task-item .task-id.p2{background:var(--yellow-bg);color:var(--yellow);}.task-item .task-id.p3{background:var(--green-bg);color:var(--green);}
+.task-item .task-info{flex:1;}.task-item .task-name{font-size:13px;font-weight:500;}.task-item .task-meta{font-size:11px;color:var(--text-muted);margin-top:2px;}.task-item .task-role{font-size:11px;color:var(--accent);}
+
+.task-filter-btn{background:var(--bg-card);border:1px solid var(--border);color:var(--text-secondary);padding:5px 14px;border-radius:6px;cursor:pointer;font-size:12px;transition:all 0.15s;}
+.task-filter-btn:hover{border-color:var(--accent);}.task-filter-btn.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+.task-filter-bar{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:14px;display:flex;flex-direction:column;gap:10px;}
+.filter-row{display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.filter-label{font-size:12px;color:var(--text-secondary);font-weight:600;min-width:72px;}
+.task-chip{background:var(--bg-page);border:1px solid var(--border);color:var(--text-secondary);padding:4px 12px;border-radius:14px;cursor:pointer;font-size:12px;transition:all 0.15s;white-space:nowrap;}
+.task-chip:hover{border-color:var(--accent);color:var(--accent);}
+.task-chip.active{background:var(--accent);color:#fff;border-color:var(--accent);}
+.filter-summary{font-size:11px;color:var(--text-secondary);text-align:right;border-top:1px solid var(--border);padding-top:6px;}
+.task-remind-btn{background:var(--accent);color:#fff;border:none;padding:4px 12px;border-radius:12px;font-size:11px;cursor:pointer;transition:all 0.15s;margin-left:8px;white-space:nowrap;}
+.task-remind-btn:hover{background:#2563eb;transform:scale(1.05);}
+.toast{position:fixed;top:24px;left:50%;transform:translateX(-50%);background:#10b981;color:#fff;padding:10px 24px;border-radius:8px;font-size:13px;z-index:9999;opacity:0;pointer-events:none;transition:opacity 0.3s;box-shadow:0 4px 16px rgba(16,185,129,0.35);}
+.toast.show{opacity:1;}
+.region-card-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:12px;margin-bottom:18px;}
+.region-card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:20px;cursor:pointer;transition:all 0.2s;box-shadow:var(--shadow);}
+.region-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:var(--shadow-hover);}
+.region-card .rc-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px;}
+.region-card .rc-name{font-size:13px;font-weight:700;}
+.region-card .rc-status{font-size:11px;font-weight:600;padding:3px 12px;border-radius:12px;}
+.region-card .rc-status.red{background:var(--red-bg);color:var(--red);}.region-card .rc-status.yellow{background:var(--yellow-bg);color:var(--yellow);}.region-card .rc-status.green{background:var(--green-bg);color:var(--green);}
+.region-card .rc-stats{display:flex;gap:16px;margin-bottom:14px;}
+.region-card .rc-stat{text-align:center;flex:1;}
+.region-card .rc-stat .rcs-val{font-size:14px;font-weight:700;line-height:1.1;}
+.region-card .rc-stat .rcs-val.red{color:var(--red);}.region-card .rc-stat .rcs-val.yellow{color:var(--yellow);}.region-card .rc-stat .rcs-val.green{color:var(--green);}
+.region-card .rc-stat .rcs-lbl{font-size:11px;color:var(--text-muted);margin-top:2px;}
+.region-card .rc-dealers{display:flex;flex-wrap:wrap;gap:6px;}
+.region-card .rc-dealer-tag{font-size:11px;padding:4px 10px;border-radius:10px;background:var(--bg-primary);color:var(--text-secondary);border:1px solid var(--border-light);}
+.region-card .rc-dealer-tag.red{background:var(--red-bg);color:var(--red);border-color:var(--red-border);}
+.region-card .rc-dealer-tag.yellow{background:var(--yellow-bg);color:var(--yellow);border-color:var(--yellow-border);}
+
+.dealer-detail-header{display:flex;align-items:center;justify-content:space-between;background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:16px 20px;margin-bottom:16px;box-shadow:var(--shadow);}
+.dealer-detail-header .ddh-left{display:flex;align-items:center;gap:12px;}
+.dealer-detail-header .ddh-city{font-size:18px;font-weight:700;}
+.dealer-detail-header .ddh-meta{font-size:11px;color:var(--text-muted);}
+.dealer-detail-header .ddh-right{display:flex;gap:20px;}
+.dealer-detail-header .ddh-stat{text-align:center;}
+.dealer-detail-header .ddh-stat .dds-val{font-size:18px;font-weight:700;}
+.dealer-detail-header .ddh-stat .dds-lbl{font-size:10px;color:var(--text-muted);}
+
+.back-link{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:var(--accent);cursor:pointer;margin-top:14px;}.back-link:hover{text-decoration:underline;}
+.task-status{display:inline-flex;align-items:center;gap:4px;font-size:0.75rem;font-weight:500;padding:2px 8px;border-radius:10px;white-space:nowrap}.task-status.s-未开始{background:#e9ecef;color:#6c757d}.task-status.s-进行中{background:#e7f1ff;color:#0d6efd}.task-status.s-已验证{background:#d1fae5;color:#059669}.task-status.s-已关闭{background:#f3f4f6;color:#9ca3af}.task-status.s-已取消{background:#fee2e2;color:#dc2626}
+
+/* === Region Page Styles === */
+.region-hero{display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,#1e3a3a 0%,#2d5e5e 100%);border-radius:12px;padding:22px 28px;margin-bottom:18px;color:#fff;}
+.region-hero.warn{background:linear-gradient(135deg,#4a3a1e 0%,#6e5a2d 100%);}
+.region-hero.danger{background:linear-gradient(135deg,#4a1e2a 0%,#6e2d3a 100%);}
+.region-hero .rh-left{display:flex;align-items:center;gap:14px;}
+.region-hero .rh-icon{width:48px;height:48px;background:rgba(255,255,255,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:20px;}
+.region-hero .rh-name{font-size:13px;font-weight:800;letter-spacing:-0.5px;}
+.region-hero .rh-meta{font-size:11px;opacity:0.6;margin-top:3px;display:flex;gap:16px;}
+.region-hero .rh-right{display:flex;align-items:center;gap:16px;}
+.region-hero .rh-stat{text-align:center;padding:0 12px;}
+.region-hero .rhs-val{font-size:14px;font-weight:700;line-height:1.2;}
+.region-hero .rhs-val.red{color:#fca5a5;}.region-hero .rhs-val.yellow{color:#fde047;}.region-hero .rhs-val.green{color:#86efac;}
+.region-hero .rhs-lbl{font-size:10px;opacity:0.5;margin-top:2px;}
+.region-hero .rh-status{display:flex;align-items:center;gap:5px;padding:6px 16px;border-radius:20px;font-size:12px;font-weight:600;}
+.region-hero .rh-status.red{background:rgba(220,38,38,0.18);color:#fca5a5;}.region-hero .rh-status.yellow{background:rgba(202,138,4,0.18);color:#fde047;}.region-hero .rh-status.green{background:rgba(22,163,74,0.18);color:#86efac;}
+
+.rh-metric-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:18px;}
+.rh-metric-card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:14px 16px;display:flex;align-items:center;gap:12px;box-shadow:var(--shadow);transition:all 0.15s;}
+.rh-metric-card:hover{border-color:var(--accent);box-shadow:var(--shadow-hover);}
+.rh-metric-card .rmc-icon{width:36px;height:36px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;}
+.rh-metric-card .rmc-icon.blue{background:var(--accent-light);}
+.rh-metric-card .rmc-icon.green{background:var(--green-bg);}
+.rh-metric-card .rmc-icon.yellow{background:var(--yellow-bg);}
+.rh-metric-card .rmc-icon.red{background:var(--red-bg);}
+.rh-metric-card .rmc-body{flex:1;min-width:0;}
+.rh-metric-card .rmc-val{font-size:13px;font-weight:700;line-height:1.1;}
+.rh-metric-card .rmc-val.red{color:var(--red);}.rh-metric-card .rmc-val.yellow{color:var(--yellow);}.rh-metric-card .rmc-val.green{color:var(--green);}
+.rh-metric-card .rmc-lbl{font-size:10px;color:var(--text-muted);margin-top:2px;}
+
+/* Dealer cards for region page */
+.dc-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(360px,1fr));gap:14px;margin-bottom:16px;}
+.dc-card{background:var(--bg-card);border:1px solid var(--border);border-radius:12px;overflow:hidden;cursor:pointer;box-shadow:var(--shadow);transition:all 0.18s;border-left:4px solid transparent;}
+.dc-card:hover{transform:translateY(-2px);box-shadow:var(--shadow-hover);}
+.dc-card.s-red{border-left-color:var(--red);}.dc-card.s-red:hover{border-color:var(--red-border);}
+.dc-card.s-yellow{border-left-color:var(--yellow);}.dc-card.s-yellow:hover{border-color:var(--yellow-border);}
+.dc-card.s-green{border-left-color:var(--green);}.dc-card.s-green:hover{border-color:var(--green-border);}
+.dc-top{padding:14px 18px;display:flex;align-items:center;justify-content:space-between;background:var(--bg-primary);}
+.dc-name{font-size:14px;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:8px;}
+.dc-name .dc-city-tag{font-size:10px;padding:2px 8px;border-radius:8px;background:var(--accent-light);color:var(--accent);font-weight:500;}
+.dc-status{font-size:10px;font-weight:600;padding:3px 10px;border-radius:10px;}
+.dc-status.red{background:var(--red-bg);color:var(--red);}
+.dc-status.yellow{background:var(--yellow-bg);color:var(--yellow);}
+.dc-status.green{background:var(--green-bg);color:var(--green);}
+.dc-kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:1px;background:var(--border-light);}
+.dc-kpi-item{padding:10px 14px;display:flex;flex-direction:column;gap:2px;background:var(--bg-card);}
+.dck-lbl{font-size:10px;color:var(--text-muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;}
+.dck-val{font-size:15px;font-weight:700;}
+.dck-val.red{color:var(--red);}.dck-val.yellow{color:var(--yellow);}.dck-val.green{color:var(--green);}
+
+.dealer-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:14px;}
+.dealer-card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:18px;cursor:pointer;transition:all 0.2s;box-shadow:var(--shadow);}
+.dealer-card:hover{border-color:var(--accent);transform:translateY(-2px);box-shadow:var(--shadow-hover);}
+.dealer-card .dealer-name{font-size:14px;font-weight:600;margin-bottom:6px;}
+.dealer-card .dealer-meta{font-size:11px;color:var(--text-muted);margin-bottom:10px;}
+.dealer-card .dealer-stats{display:flex;gap:8px;flex-wrap:wrap;}
+.dealer-card .dealer-stat{padding:3px 10px;border-radius:6px;font-size:10px;font-weight:500;}
+.dealer-card .dealer-stat.red{background:var(--red-bg);color:var(--red);}.dealer-card .dealer-stat.yellow{background:var(--yellow-bg);color:var(--yellow);}.dealer-card .dealer-stat.green{background:var(--green-bg);color:var(--green);}
+
+.vehicle-summary{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:14px;margin-bottom:20px;}
+.vehicle-card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:18px;box-shadow:var(--shadow);}
+.vehicle-card .v-name{font-size:15px;font-weight:700;margin-bottom:10px;}
+.vehicle-card .v-row{display:flex;justify-content:space-between;font-size:12px;padding:3px 0;color:var(--text-secondary);}
+.vehicle-card .v-row .v-val{font-weight:600;color:var(--text-primary);}
+
+::-webkit-scrollbar{width:5px;}::-webkit-scrollbar-track{background:transparent;}::-webkit-scrollbar-thumb{background:#d0d5dd;border-radius:3px;}
+
+/* === Vehicle Page Styles === */
+.vehicle-hero{display:flex;align-items:center;justify-content:space-between;background:linear-gradient(135deg,#1e2a4a 0%,#2d3f6a 100%);border-radius:12px;padding:22px 28px;margin-bottom:18px;color:#fff;}
+.vehicle-hero .vh-left{display:flex;align-items:center;gap:16px;}
+.vehicle-hero .vh-icon{width:48px;height:48px;background:rgba(255,255,255,0.12);border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:22px;}
+.vehicle-hero .vh-name{font-size:22px;font-weight:800;letter-spacing:-0.5px;}
+.vehicle-hero .vh-type{font-size:11px;opacity:0.6;margin-top:2px;text-transform:uppercase;letter-spacing:1px;}
+.vehicle-hero .vh-right{display:flex;align-items:center;gap:20px;}
+.vehicle-hero .vh-status{display:flex;align-items:center;gap:6px;padding:6px 16px;border-radius:20px;font-size:12px;font-weight:600;}
+.vehicle-hero .vh-status.red{background:rgba(220,38,38,0.18);color:#fca5a5;}.vehicle-hero .vh-status.yellow{background:rgba(202,138,4,0.18);color:#fde047;}.vehicle-hero .vh-status.green{background:rgba(22,163,74,0.18);color:#86efac;}
+.vehicle-hero .vh-vital{text-align:center;}
+.vehicle-hero .vh-vital .vv-val{font-size:20px;font-weight:700;line-height:1.2;}
+.vehicle-hero .vh-vital .vv-lbl{font-size:10px;opacity:0.5;margin-top:2px;}
+
+.metric-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:20px;}
+.metric-card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:16px 18px;display:flex;align-items:center;gap:12px;transition:all 0.15s;box-shadow:var(--shadow);cursor:default;}
+.metric-card:hover{border-color:var(--accent);box-shadow:var(--shadow-hover);}
+.metric-card .mc-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0;}
+.metric-card .mc-icon.blue{background:var(--accent-light);}
+.metric-card .mc-icon.green{background:var(--green-bg);}
+.metric-card .mc-icon.yellow{background:var(--yellow-bg);}
+.metric-card .mc-icon.red{background:var(--red-bg);}
+.metric-card .mc-body{flex:1;min-width:0;}
+.metric-card .mc-val{font-size:22px;font-weight:700;line-height:1.1;color:var(--text-primary);}
+.metric-card .mc-val.red{color:var(--red);}.metric-card .mc-val.yellow{color:var(--yellow);}.metric-card .mc-val.green{color:var(--green);}
+.metric-card .mc-lbl{font-size:11px;color:var(--text-muted);margin-top:2px;}
+.metric-card .mc-bar{margin-top:6px;height:4px;background:var(--bg-primary);border-radius:2px;overflow:hidden;}
+.metric-card .mc-bar-fill{height:100%;border-radius:2px;transition:width 0.5s ease;}
+.metric-card .mc-bar-fill.green{background:var(--green);}.metric-card .mc-bar-fill.yellow{background:var(--yellow);}.metric-card .mc-bar-fill.red{background:var(--red);}
+
+.region-filter{display:flex;align-items:center;gap:6px;margin-bottom:14px;flex-wrap:wrap;}
+.region-filter .rf-label{font-size:11px;font-weight:600;color:var(--text-muted);margin-right:4px;}
+.region-filter .rf-tab{background:var(--bg-card);border:1px solid var(--border);color:var(--text-secondary);padding:5px 14px;border-radius:16px;cursor:pointer;font-size:11px;transition:all 0.15s;user-select:none;white-space:nowrap;}
+.region-filter .rf-tab:hover{border-color:var(--accent);color:var(--accent);}
+.region-filter .rf-tab.active{background:var(--accent);color:#fff;border-color:var(--accent);font-weight:600;}
+.region-filter .rf-tab .rf-badge{margin-left:4px;font-size:10px;opacity:0.75;}
+
+.veh-section-header{display:flex;align-items:center;gap:10px;margin-bottom:14px;}
+.veh-section-header .vsh-title{font-size:14px;font-weight:700;color:var(--text-primary);}
+.veh-section-header .vsh-count{font-size:11px;color:var(--text-muted);padding:2px 10px;background:var(--bg-primary);border-radius:10px;}
+
+.veh-dealer-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(340px,1fr));gap:12px;margin-bottom:16px;}
+.veh-dealer-card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;overflow:hidden;box-shadow:var(--shadow);transition:all 0.15s;}
+.veh-dealer-card:hover{border-color:var(--accent);box-shadow:var(--shadow-hover);}
+.veh-dealer-card .vdc-top{display:flex;align-items:center;justify-content:space-between;padding:14px 16px;border-bottom:1px solid var(--border-light);}
+.veh-dealer-card .vdc-name{font-size:14px;font-weight:700;}
+.veh-dealer-card .vdc-city{font-size:10px;color:var(--text-muted);margin-top:1px;}
+.veh-dealer-card .vdc-body{display:grid;grid-template-columns:1fr 1fr;gap:1px;background:var(--border-light);}
+.veh-dealer-card .vdc-stat{background:var(--bg-card);padding:10px 14px;display:flex;flex-direction:column;gap:2px;}
+.veh-dealer-card .vdc-sval{font-size:16px;font-weight:700;color:var(--text-primary);}
+.veh-dealer-card .vdc-sval.red{color:var(--red);}.veh-dealer-card .vdc-sval.yellow{color:var(--yellow);}.veh-dealer-card .vdc-sval.green{color:var(--green);}
+.veh-dealer-card .vdc-slbl{font-size:10px;color:var(--text-muted);}
+.veh-dealer-card .vdc-footer{display:flex;align-items:center;gap:10px;padding:10px 16px;border-top:1px solid var(--border-light);font-size:11px;color:var(--text-muted);}
+.veh-dealer-card .vdc-bar{flex:1;height:6px;background:var(--bg-primary);border-radius:3px;overflow:hidden;}
+.veh-dealer-card .vdc-bar-fill{height:100%;border-radius:3px;transition:width 0.5s ease;}
+.veh-dealer-card .vdc-bar-fill.green{background:var(--green);}.veh-dealer-card .vdc-bar-fill.yellow{background:var(--yellow);}.veh-dealer-card .vdc-bar-fill.red{background:var(--red);}
+.veh-dealer-card .vdc-pct{font-size:11px;font-weight:600;white-space:nowrap;}
+.rg-kpi-grid{display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:16px;}
+.rg-kpi-card{background:var(--bg-card);border:1px solid var(--border);border-radius:10px;padding:16px;display:flex;align-items:center;gap:12px;transition:all 0.15s;}
+.rg-kpi-card:hover{border-color:var(--accent);box-shadow:0 2px 10px rgba(0,0,0,0.06);}
+.rgk-icon{width:38px;height:38px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0;}
+.rgk-icon.blue{background:#e8f4fd;color:#2b7bd6;}
+.rgk-icon.yellow{background:#fef3e0;color:#d4921e;}
+.rgk-icon.green{background:#e6f6ec;color:#2e8b57;}
+.rgk-body{flex:1;min-width:0;}
+.rgk-label{font-size:12px;color:var(--text-secondary);margin-bottom:2px;}
+.rgk-values{display:flex;align-items:baseline;gap:8px;}
+.rgk-val{font-size:13px;font-weight:700;}
+.rgk-val.red{color:var(--red);}
+.rgk-val.yellow{color:var(--yellow);}
+.rgk-val.green{color:var(--green);}
+.rgk-target{font-size:11px;color:var(--text-muted);}
+.rgk-bar{height:4px;background:var(--bg-primary);border-radius:2px;margin-top:6px;overflow:hidden;}
+.rgk-fill{height:100%;border-radius:2px;transition:width 0.3s;}
+.rgk-fill.green{background:var(--green);}
+.rgk-fill.yellow{background:var(--yellow);}
+.rgk-fill.red{background:var(--red);}
+.rg-kpi-card .status-pill{flex-shrink:0;margin-left:auto;}
+.rc-dealers-wrap{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;}
+.rc-dealers-wrap .rc-dealer-tag{font-size:11px;padding:4px 12px;border-radius:10px;background:var(--bg-primary);color:var(--text-secondary);border:1px solid var(--border-light);transition:all 0.15s;}
+.rc-dealers-wrap .rc-dealer-tag:hover{border-color:var(--accent);color:var(--text-primary);box-shadow:0 1px 4px rgba(0,0,0,0.06);}
+.rc-dealers-wrap .rc-dealer-tag.red{border-color:var(--red);color:var(--red);}
+.rc-dealers-wrap .rc-dealer-tag.yellow{border-color:var(--yellow);color:var(--yellow);}
+.rc-dealers-wrap .rc-dealer-tag.green{border-color:var(--green);color:var(--green);}
+.ds-toggle{cursor:pointer;user-select:none;display:flex;align-items:center;gap:6px;font-size:13px;font-weight:600;color:var(--text-primary);margin-bottom:12px;padding-bottom:10px;border-bottom:1px solid var(--border-light);transition:color 0.15s;}
+.ds-toggle:hover{color:var(--accent);}
+.ds-toggle .ds-arrow{display:inline-block;transition:transform 0.2s;font-size:10px;}
+.ds-toggle .ds-arrow.open{transform:rotate(90deg);}
+.ds-body{overflow:hidden;transition:max-height 0.3s ease;max-height:0;}
+
+/* V1.5 role drilldown panel */
+.role-drilldown-header{display:flex;align-items:center;gap:12px;margin-bottom:20px;padding-bottom:16px;border-bottom:1px solid var(--border);}
+.role-drilldown-header .back-btn{font-size:13px;color:var(--accent);cursor:pointer;padding:4px 8px;border-radius:4px;background:var(--bg-hover);}
+.role-drilldown-header .back-btn:hover{background:var(--accent);color:#fff;}
+.role-drilldown-header .drilldown-title{font-size:18px;font-weight:700;}
+.role-drilldown-body{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+.role-drilldown-card{background:var(--bg-secondary);border:1px solid var(--border);border-radius:8px;padding:20px;}
+.role-drilldown-card.full{grid-column:1/-1;}
+.role-drilldown-card h4{font-size:12px;color:var(--text-muted);text-transform:uppercase;margin:0 0 10px;letter-spacing:0.5px;}
+.role-drilldown-card .big-value{font-size:28px;font-weight:700;}
+.role-drilldown-card .meta-row{display:flex;justify-content:space-between;align-items:center;margin-top:8px;}
+.role-drilldown-card .target-label{font-size:13px;color:var(--text-muted);}
+.role-drilldown-card .target-label b{color:var(--text-primary);}
+.role-drilldown-card .desc-text{font-size:14px;line-height:1.6;color:var(--text-secondary);}
+.role-drilldown-card .action-text{font-size:14px;color:var(--text-secondary);background:var(--bg-hover);padding:10px 12px;border-radius:6px;border-left:3px solid var(--accent);}
+.role-drilldown-card .task-jump-btn{display:inline-flex;align-items:center;gap:6px;margin-top:12px;padding:10px 18px;background:var(--accent);color:#fff;border:none;border-radius:6px;font-size:14px;font-weight:600;cursor:pointer;}
+.role-drilldown-card .task-jump-btn:hover{opacity:0.85;}
+
+</style>
+</head>
+<body>
+
+<aside class="sidebar">
+  <div class="sidebar-header"><div class="logo">DATA DASHBOARD</div><div class="title">汽车品牌 · 大区经营诊断</div><div class="version-badge">V1.6</div></div>
+  <nav class="sidebar-nav">
+    <div class="nav-group">
+      <div class="nav-group-header active expanded" data-nav="complete" onclick="toggleNavGroup(this,'sub-complete')"><span class="icon">&#128202;</span>完整数据看板<span class="arrow">&#9654;</span></div>
+      <div class="nav-sub open" id="sub-complete"><div class="nav-sub-item active" data-nav="dashboard" onclick="event.stopPropagation();switchPage('dashboard')"><span class="dot red"></span>大区总驾驶舱</div></div>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-header" data-nav="vehicle" onclick="toggleNavGroup(this,'sub-vehicle')"><span class="icon">&#128663;</span>车型看板<span class="arrow">&#9654;</span></div>
+      <div class="nav-sub" id="sub-vehicle"><div class="nav-sub-item" data-nav="vehicle-A" onclick="event.stopPropagation();switchPage('vehicle-A')"><span class="dot red"></span>A 型<span class="badge">7店</span></div><div class="nav-sub-item" data-nav="vehicle-B" onclick="event.stopPropagation();switchPage('vehicle-B')"><span class="dot red"></span>B 型<span class="badge">6店</span></div><div class="nav-sub-item" data-nav="vehicle-C" onclick="event.stopPropagation();switchPage('vehicle-C')"><span class="dot red"></span>C 型<span class="badge">8店</span></div><div class="nav-sub-item" data-nav="vehicle-D" onclick="event.stopPropagation();switchPage('vehicle-D')"><span class="dot red"></span>D 型<span class="badge">6店</span></div></div>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-header" data-nav="dealer" onclick="switchPage('dealer')"><span class="icon">&#127970;</span>经销商看板<span class="arrow">&#9654;</span></div>
+      <div class="nav-sub" id="sub-dealer"></div>
+    </div>
+    <div class="nav-group" id="nav-role-dashboard" style="display:none;">
+      <div class="nav-group-header" data-nav="role-dashboard" onclick="switchRolePage(currentRole)">
+        <span class="icon">&#128202;</span>完整数据看板<span class="arrow">&#9654;</span>
+      </div>
+      <div class="nav-sub" id="sub-role-dashboard">
+        <div class="nav-sub-item active" data-nav="role-full-dash" onclick="event.stopPropagation();switchRolePage(currentRole)">岗位KPI总览</div>
+      </div>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-header" data-nav="inspection" onclick="toggleNavGroup(this,'sub-inspection')"><span class="icon">&#9989;</span>核检任务看板<span class="arrow">&#9654;</span></div>
+      <div class="nav-sub" id="sub-inspection"><div class="nav-sub-item" data-nav="tasks-P1" onclick="event.stopPropagation();switchTaskLevel('P1')"><span class="dot red"></span>P1 紧急<span class="badge">37项</span></div><div class="nav-sub-item" data-nav="tasks-P2" onclick="event.stopPropagation();switchTaskLevel('P2')"><span class="dot yellow"></span>P2 重要<span class="badge">28项</span></div><div class="nav-sub-item" data-nav="tasks-P3" onclick="event.stopPropagation();switchTaskLevel('P3')"><span class="dot green"></span>P3 常规<span class="badge">24项</span></div></div>
+    </div>
+    <div class="nav-group">
+      <div class="nav-group-header" data-nav="roles" onclick="toggleNavGroup(this,'sub-roles')"><span class="icon">&#128100;</span>按岗位查看<span class="arrow">&#9654;</span></div>
+      <div class="nav-sub" id="sub-roles">
+        <div class="nav-sub-item" data-nav="role-大区副总" onclick="switchRolePage('大区副总')">大区副总</div>
+        <div class="nav-sub-item" data-nav="role-市场经理" onclick="switchRolePage('市场经理')">市场经理</div>
+        <div class="nav-sub-item" data-nav="role-新媒体经理" onclick="switchRolePage('新媒体经理')">新媒体经理</div>
+        <div class="nav-sub-item" data-nav="role-零售经理" onclick="switchRolePage('零售经理')">零售经理</div>
+        <div class="nav-sub-item" data-nav="role-培训经理" onclick="switchRolePage('培训经理')">培训经理</div>
+        <div class="nav-sub-item" data-nav="role-渠道交付经理" onclick="switchRolePage('渠道交付经理')">渠道交付经理</div>
+        <div class="nav-sub-item" data-nav="role-运营支持" onclick="switchRolePage('运营支持')">运营支持</div>
+      </div>
+    </div>
+  </nav>
+  <div class="sidebar-footer"><span>2026-07 · 示例大区</span><span>演示数据</span></div>
+</aside>
+
+<main class="main">
+  <header class="topbar">
+    <div class="topbar-left"><div class="breadcrumb" id="breadcrumb"><span>大区经营诊断</span><span class="sep">/</span><span class="current">大区总驾驶舱</span></div></div>
+    <div class="topbar-right">
+      <div class="month-badge">2026-07 · 示例大区</div>
+      <div class="role-selector"><select id="roleSelect" onchange="onRoleSelectChange()"><option value="">切换岗位视角</option><option value="大区总">大区总</option><option value="大区副总">大区副总</option><option value="市场经理">市场经理</option><option value="新媒体经理">新媒体经理</option><option value="零售经理">零售经理</option><option value="培训经理">培训经理</option><option value="渠道交付经理">渠道交付经理</option><option value="运营支持">运营支持</option></select></div>
+    </div>
+  </header>
+  <div class="content" id="contentArea">
+    <div class="page active" id="page-dashboard"></div>
+    <div class="page" id="page-role"></div>
+    <div class="page" id="page-vehicle-A"></div><div class="page" id="page-vehicle-B"></div><div class="page" id="page-vehicle-C"></div><div class="page" id="page-vehicle-D"></div>
+    <div class="page" id="page-dealer-dashboard"></div>
+    <div class="page" id="page-dealer-region"></div>
+    <div class="page" id="page-dealer-generic"></div><div class="page" id="page-tasks"></div>
+  </div>
+</main>
+
+<div class="drilldown-overlay" id="drilldownOverlay" onclick="if(event.target===this)closeDrilldown()"><div class="drilldown-panel" id="drilldownPanel"></div></div>
+
+<script>
+// ==================== DATA ====================
+const dashboardKPIs = [
+  {id:1,name:'市占率',value:'7.9%',target:'≥12%',status:'red',role:'市场经理 / 新媒体经理 / 渠道交付经理',drillType:'marketShare'},
+  {id:2,name:'销量目标达成率',value:'85.7%',target:'≥95%',status:'yellow',role:'大区副总 / 市场经理 / 零售经理 / 培训经理 / 渠道交付经理 / 运营支持 / 新媒体经理',drillType:'salesRate'},
+  {id:3,name:'渠道商盈健康度',value:'62.3%',target:'≥80%',status:'red',role:'大区副总',drillType:'profitHealth'},
+  {id:4,name:'单车综合收益',value:'88.1%',target:'≥95%',status:'yellow',role:'市场经理 / 新媒体经理 / 零售经理',drillType:'unitProfit'},
+  {id:5,name:'库存深度（月）',value:'2.8',target:'≤1.5',status:'red',role:'大区副总 / 零售经理 / 渠道交付经理',drillType:'stockDepth'},
+  {id:6,name:'NPS',value:'91.4%',target:'≥95%',status:'yellow',role:'大区副总 / 市场经理 / 新媒体经理 / 零售经理 / 培训经理 / 渠道交付经理',drillType:'nps'},
+  {id:7,name:'全链路成交转化率',value:'4.2%',target:'≥8%',status:'red',role:'大区副总 / 市场经理 / 新媒体经理 / 零售经理 / 培训经理 / 运营支持',drillType:'conversion'},
+  {id:8,name:'关键岗位滚动流失率',value:'13.0%',target:'≤10%',status:'red',role:'销售顾问 / 服务顾问 / 销售经理 / 市场经理',drillType:'turnover'},
+];
+
+const marketShareDetail={title:'市占率明细 — 按城市/片区',summary:{current:'7.9%',target:'12.0%',gap:'4.1%',status:'red'},rows:[{name:'南京片区',value:'7.9%',target:'12.0%',gap:'4.1%',status:'red',note:'核心商圈声量和线索供给不足'},{name:'苏州片区',value:'8.6%',target:'12.0%',gap:'3.4%',status:'red',note:'活动线索成交偏弱'},{name:'合肥片区',value:'9.3%',target:'12.0%',gap:'2.7%',status:'red',note:'车型A贡献不足'}],cities:[{name:'南京',value:'57.0%',target:'80.0%',gap:'23.0%',status:'red'},{name:'苏州',value:'62.0%',target:'80.0%',gap:'18.0%',status:'red'},{name:'合肥',value:'67.0%',target:'80.0%',gap:'13.0%',status:'red'}],insight:'片区市占率全线低于目标12%，差距最大的是南京（-4.1pp）。城市维度看，南京达标率仅57%，远低于80%目标，核心原因在于商圈声量不足与线索供给缺口。建议优先在南京开展专项市占率攻坚行动，集中市场活动资源，同时强化新媒体线索获取与转化。'};
+
+const salesRateDetail={title:'销量目标达成率明细 — 按经销商',summary:{current:'85.7%',target:'≥95%',gap:'9.3%',status:'yellow'},rows:[{name:'南京A店',value:'66.2%',target:'80%',gap:'13.8%',status:'red',note:'B型/D型库存积压，订单缺口大'},{name:'苏州A店',value:'72.0%',target:'80%',gap:'8.0%',status:'red',note:'A型/C型高库存，零售节奏偏慢'},{name:'合肥B店',value:'77.8%',target:'80%',gap:'2.2%',status:'yellow',note:'C型订单达成偏低'},{name:'南京C店',value:'82.5%',target:'80%',status:'green'},{name:'苏州B店',value:'85.5%',target:'80%',status:'green'},{name:'无锡B店',value:'87.3%',target:'80%',status:'green'},{name:'常州A店',value:'88.9%',target:'80%',status:'green'},{name:'徐州A店',value:'89.1%',target:'80%',status:'green'},{name:'合肥A店',value:'89.5%',target:'80%',status:'green'},{name:'无锡A店',value:'90.2%',target:'80%',status:'green'},{name:'苏州C店',value:'90.8%',target:'80%',status:'green'},{name:'合肥C店',value:'94.2%',target:'80%',status:'green'},{name:'南通A店',value:'91.0%',target:'80%',status:'green'},{name:'南京B店',value:'91.5%',target:'80%',status:'green'}],insight:'3家经销商销量目标达成率低于80%：南京A店（66.2%）、苏州A店（72.0%）、合肥B店（77.8%）。这三家共同特征为高库存+零售节奏偏慢，其中南京A店兼有亏损状态叠加，需一店一策制定销量回升计划。'};
+
+const profitHealthDetail={title:'渠道商盈健康度明细 — 按经销商',summary:{current:'62.3%',target:'≥80%',gap:'17.7%',status:'red'},rows:[{name:'南京A店',value:'亏损',level:'严重',note:'B型/D型库存积压+零售低迷，单车综合收益仅¥7,066，远低于¥8,000目标',status:'red'},{name:'苏州A店',value:'亏损',level:'较重',note:'A型/C型高库存，零售单车收益¥7,680，金融/保险渗透不足',status:'red'},{name:'合肥B店',value:'微亏',level:'较轻',note:'C型订单达成率偏低拖累整体毛利，零售单车收益¥8,294勉强达标',status:'yellow'},{name:'苏州B店',value:'盈亏平衡',level:'边缘',note:'成交转化率85.5%尚可，但增值业务渗透不足拉低综合收益',status:'yellow'},{name:'南京C店',value:'盈利',level:'健康',note:'B型/C型库存周转良好，整体经营稳健',status:'green'},{name:'南京B店',value:'盈利',level:'健康',note:'A型/D型零售节奏正常，库存深度健康',status:'green'},{name:'苏州C店',value:'盈利',level:'健康',note:'C型/D型订单达成率良好',status:'green'},{name:'合肥A店',value:'盈利',level:'健康',note:'A型/C型库存控制得当',status:'green'},{name:'合肥C店',value:'盈利',level:'最优',note:'全大区经营最健康经销商，各项指标全面达标',status:'green'},{name:'无锡A店',value:'盈利',level:'健康',note:'A型/D型经营正常',status:'green'},{name:'无锡B店',value:'微亏',level:'较轻',note:'B型高库存（1店）拉高成本',status:'yellow'},{name:'常州A店',value:'盈利',level:'健康',note:'A型/B型库存深度健康',status:'green'},{name:'南通A店',value:'盈利',level:'健康',note:'C型/D型周转正常',status:'green'},{name:'徐州A店',value:'盈利',level:'健康',note:'A型/C型经营稳定',status:'green'}],insight:'全大区盈健康度仅62.3%，3家亏损、2家盈亏边缘。南京A店（严重亏损）为最危急项，亏损主因B/D型库存积压抬升资金成本+零售低迷，单车综合收益仅¥7,066。建议优先对南京A店、苏州A店启动亏损专项治理，同步管控合肥B店和无锡B店防止恶化。'};
+
+const unitProfitDetail={title:'单车综合收益明细 — 按车型',summary:{current:'88.1%',target:'≥95%',gap:'6.9%',status:'yellow'},rows:[{name:'A 型',value:'¥19,500',target:'¥20,000',gap:'¥500',status:'yellow',note:'南京B店/徐州A店收益偏低，苏州A店表现最优'},{name:'B 型',value:'¥17,100',target:'¥20,000',gap:'¥2,900',status:'red',note:'南京A店贡献严重拖后腿，B型整体溢价力不足'},{name:'C 型',value:'¥18,800',target:'¥20,000',gap:'¥1,200',status:'yellow',note:'合肥B店C型订单多但增值低，金融渗透率仅38%'},{name:'D 型',value:'¥16,500',target:'¥20,000',gap:'¥3,500',status:'red',note:'南京A店D型零售少+库存积压，单车成本被摊高'}],byComponent:[{name:'裸车毛利',value:'61%',target:'65%',status:'yellow'},{name:'金融渗透收益',value:'38.5%',target:'50%',status:'red'},{name:'保险渗透收益',value:'81.4%',target:'85%',status:'yellow'},{name:'装饰/延保渗透',value:'42.8%',target:'50%',status:'yellow'},{name:'置换收益',value:'15.2%',target:'12%',status:'green'}],insight:'D型单车收益最低（¥16,500），主因南京A店D型库存积压摊高单位成本。B型次之（¥17,100），溢价力不足+南京A店拖累。收益构成中金融渗透率（38.5%）是最大短板，远低于50%目标，直接拉低了全车型综合收益水平。'};
+
+const stockDepthDetail={title:'库存深度明细 — 按车型汇总',summary:{current:'2.8月',target:'≤1.5月',gap:'1.3月',status:'red'},vehicles:[{name:'A 型',stores:7,totalStock:185,retail30:109,orders:100,over90:10,avgDepth:1.8,highStockStores:2},{name:'B 型',stores:6,totalStock:189,retail30:95,orders:84,over90:11,avgDepth:1.8,highStockStores:2},{name:'C 型',stores:8,totalStock:183,retail30:104,orders:94,over90:8,avgDepth:1.7,highStockStores:3},{name:'D 型',stores:6,totalStock:134,retail30:70,orders:63,over90:6,avgDepth:1.8,highStockStores:3}],insight:'四款车型库存深度均超1.5月健康线。B型库存总量最高（189台），C型高库存门店最多（3店）。超90天库龄合计35台，主要集中在苏州A店（A型5台、C型3台）、南京A店（B型7台、D型5台）。建议启动高库存车型专项消化。'};
+
+const npsDetail={title:'NPS明细 — 按评价维度',summary:{current:'72.5',target:'≥69',gap:'+3.5',status:'yellow'},byDimension:[{name:'销售体验',value:'77.0',target:'70',status:'green',note:'整体达标，3家预警门店需重点关注报价透明度'},{name:'售后服务',value:'71.9',target:'68',status:'green',note:'整体达标，配件价格和等待时长需持续优化'},{name:'交车体验',value:'73.4',target:'70',status:'green',note:'整体达标，2家预警门店功能讲解环节待加强'},{name:'产品满意度',value:'75.2',target:'72',status:'green',note:'整体达标，3家预警门店油耗/智能体验为主要减分项'},{name:'品牌口碑',value:'64.8',target:'65',status:'yellow',note:'5家预警为大区最弱维度，亲友推荐率走低'}],byDealer:[],insight:'NPS 5大评价维度4项达标、1项预警。品牌口碑（64.8）为最弱维度，5家经销商预警。南京A店全维度不达标，合肥C店全优标杆。可点击各行下钻查看各经销商明细。'};
+
+const conversionDetail={title:'全链路成交转化率明细 — 按漏斗阶段',summary:{current:'5.8%',target:'≥8%',gap:'2.2%',status:'red'},stages:[{name:'线索→到店',value:'42.3%',target:'≥45%',status:'yellow',note:'线索到店引导基本到位，南京A与苏州A偏低'},{name:'到店→试驾',value:'55.1%',target:'≥60%',status:'yellow',note:'到店后试驾引导不足，约45%到店客户未试驾'},{name:'试驾→报价',value:'48.0%',target:'≥55%',status:'red',note:'试驾后客户报价转化率低，销售跟进话术待优化'},{name:'报价→成交',value:'52.0%',target:'≥55%',status:'yellow',note:'报价后成交环节尚可，金融方案与价格谈判仍有提升空间'}],byDealer:[],insight:'全链路成交转化率5.8%，距8%目标仍有差距。试驾→报价（48%）为最大短板、4家经销商预警。可点击各行下钻查看各经销商明细。'};
+
+const turnoverDetail={title:'关键岗位滚动流失率明细 — 按岗位',summary:{current:'13.0%',target:'≤10%',gap:'3.0%',status:'red'},byPosition:[{name:'销售顾问',value:'14.8%',target:'10%',status:'red',note:'零售条线，底薪偏低+业绩压力大，南京/苏州最严重'},{name:'服务顾问',value:'16.0%',target:'10%',status:'red',note:'售后条线，工作强度大+职业发展路径不清晰'},{name:'销售经理',value:'11.2%',target:'10%',status:'yellow',note:'管理岗，南京/合肥片区管理压力与激励倒挂'},{name:'市场经理',value:'9.0%',target:'10%',status:'green',note:'市场条线相对稳定，人才储备充足'}],byCity:[],insight:'关键岗位流失率13%，销售顾问（14.8%）与服务顾问（16%）为两大高危岗。可点击各行下钻查看各城市明细。'};
+
+const vehicleData={'A':{stores:7,totalStock:185,retail30:109,orders:100,over90:10,avgDepth:1.8,highStockStores:2,detail:[{dealer:'南京B店',stock:21,retail:14,target:17,order:13,over90:1,depth:1.5,highStock:false},{dealer:'苏州A店',stock:57,retail:24,target:29,order:22,over90:5,depth:2.4,highStock:true},{dealer:'苏州B店',stock:21,retail:14,target:17,order:13,over90:0,depth:1.5,highStock:false},{dealer:'合肥A店',stock:23,retail:15,target:18,order:14,over90:1,depth:1.5,highStock:true},{dealer:'无锡A店',stock:24,retail:16,target:18,order:14,over90:1,depth:1.5,highStock:false},{dealer:'常州A店',stock:21,retail:14,target:17,order:13,over90:1,depth:1.5,highStock:false},{dealer:'徐州A店',stock:18,retail:12,target:15,order:11,over90:1,depth:1.5,highStock:false}]},'B':{stores:6,totalStock:189,retail30:95,orders:84,over90:11,avgDepth:1.8,highStockStores:2,detail:[{dealer:'南京A店',stock:82,retail:30,target:40,order:27,over90:7,depth:2.7,highStock:true},{dealer:'南京C店',stock:19,retail:13,target:18,order:12,over90:1,depth:1.5,highStock:false},{dealer:'苏州B店',stock:15,retail:10,target:14,order:9,over90:0,depth:1.5,highStock:false},{dealer:'合肥B店',stock:35,retail:17,target:23,order:15,over90:2,depth:2.1,highStock:true},{dealer:'合肥C店',stock:18,retail:12,target:17,order:11,over90:0,depth:1.5,highStock:false},{dealer:'无锡B店',stock:20,retail:13,target:18,order:12,over90:1,depth:1.5,highStock:true},{dealer:'常州A店',stock:15,retail:10,target:14,order:9,over90:0,depth:1.5,highStock:false}]},'C':{stores:8,totalStock:183,retail30:104,orders:94,over90:8,avgDepth:1.7,highStockStores:3,detail:[{dealer:'南京C店',stock:14,retail:9,target:11,order:8,over90:0,depth:1.6,highStock:true},{dealer:'苏州A店',stock:41,retail:17,target:21,order:15,over90:3,depth:2.4,highStock:true},{dealer:'苏州C店',stock:17,retail:12,target:16,order:11,over90:1,depth:1.4,highStock:false},{dealer:'合肥A店',stock:16,retail:11,target:14,order:10,over90:0,depth:1.5,highStock:false},{dealer:'合肥B店',stock:49,retail:23,target:29,order:21,over90:4,depth:2.1,highStock:true},{dealer:'无锡B店',stock:14,retail:10,target:13,order:9,over90:0,depth:1.4,highStock:false},{dealer:'南通A店',stock:19,retail:13,target:17,order:12,over90:0,depth:1.5,highStock:false},{dealer:'徐州A店',stock:13,retail:9,target:11,order:8,over90:0,depth:1.4,highStock:false}]},'D':{stores:6,totalStock:134,retail30:70,orders:63,over90:6,avgDepth:1.8,highStockStores:3,detail:[{dealer:'南京A店',stock:60,retail:21,target:24,order:19,over90:5,depth:2.9,highStock:true},{dealer:'南京B店',stock:16,retail:11,target:13,order:10,over90:0,depth:1.5,highStock:false},{dealer:'苏州C店',stock:13,retail:8,target:9,order:7,over90:0,depth:1.6,highStock:true},{dealer:'合肥C店',stock:13,retail:9,target:10,order:8,over90:0,depth:1.4,highStock:false},{dealer:'无锡A店',stock:18,retail:12,target:14,order:11,over90:1,depth:1.5,highStock:false},{dealer:'南通A店',stock:14,retail:9,target:10,order:8,over90:0,depth:1.6,highStock:true}]}};
+const vehicleExtraData={ 'A':{summary:{unitProfit:'1.8万',targetProfit:'2.0万',testDriveRate:'58%',finRate:'42%',insRate:'55%',npsModel:'82',convRate:'5.2%',marketShare:'8.3%'},dealers:{'南京B店':{unitProfit:'2.1万',testDriveRate:'65%',finRate:'48%',insRate:'60%'},'苏州A店':{unitProfit:'1.4万',testDriveRate:'42%',finRate:'32%',insRate:'45%'},'苏州B店':{unitProfit:'1.9万',testDriveRate:'60%',finRate:'44%',insRate:'55%'},'合肥A店':{unitProfit:'1.7万',testDriveRate:'55%',finRate:'40%',insRate:'52%'},'无锡A店':{unitProfit:'1.8万',testDriveRate:'58%',finRate:'43%',insRate:'56%'},'常州A店':{unitProfit:'1.9万',testDriveRate:'61%',finRate:'45%',insRate:'57%'},'徐州A店':{unitProfit:'2.0万',testDriveRate:'63%',finRate:'46%',insRate:'58%'}}}, 'B':{summary:{unitProfit:'2.1万',targetProfit:'2.2万',testDriveRate:'52%',finRate:'38%',insRate:'48%',npsModel:'85',convRate:'5.8%',marketShare:'9.1%'},dealers:{'南京A店':{unitProfit:'2.8万',testDriveRate:'48%',finRate:'35%',insRate:'42%'},'南京C店':{unitProfit:'2.0万',testDriveRate:'58%',finRate:'42%',insRate:'52%'},'苏州B店':{unitProfit:'1.7万',testDriveRate:'50%',finRate:'38%',insRate:'48%'},'合肥B店':{unitProfit:'2.2万',testDriveRate:'45%',finRate:'32%',insRate:'40%'},'合肥C店':{unitProfit:'1.8万',testDriveRate:'55%',finRate:'40%',insRate:'50%'},'无锡B店':{unitProfit:'1.9万',testDriveRate:'52%',finRate:'38%',insRate:'47%'},'常州A店':{unitProfit:'2.1万',testDriveRate:'56%',finRate:'41%',insRate:'51%'}}}, 'C':{summary:{unitProfit:'1.5万',targetProfit:'1.8万',testDriveRate:'45%',finRate:'35%',insRate:'50%',npsModel:'78',convRate:'4.5%',marketShare:'7.6%'},dealers:{'南京C店':{unitProfit:'1.6万',testDriveRate:'48%',finRate:'38%',insRate:'53%'},'苏州A店':{unitProfit:'1.2万',testDriveRate:'35%',finRate:'28%',insRate:'42%'},'苏州C店':{unitProfit:'1.7万',testDriveRate:'52%',finRate:'40%',insRate:'55%'},'合肥A店':{unitProfit:'1.5万',testDriveRate:'45%',finRate:'36%',insRate:'50%'},'合肥B店':{unitProfit:'1.3万',testDriveRate:'38%',finRate:'30%',insRate:'44%'},'无锡B店':{unitProfit:'1.6万',testDriveRate:'50%',finRate:'38%',insRate:'52%'},'南通A店':{unitProfit:'1.8万',testDriveRate:'55%',finRate:'42%',insRate:'56%'},'徐州A店':{unitProfit:'1.5万',testDriveRate:'46%',finRate:'35%',insRate:'48%'}}}, 'D':{summary:{unitProfit:'1.3万',targetProfit:'1.7万',testDriveRate:'40%',finRate:'30%',insRate:'42%',npsModel:'75',convRate:'3.8%',marketShare:'6.2%'},dealers:{'南京A店':{unitProfit:'1.2万',testDriveRate:'32%',finRate:'26%',insRate:'38%'},'南京B店':{unitProfit:'1.4万',testDriveRate:'42%',finRate:'32%',insRate:'44%'},'苏州C店':{unitProfit:'1.3万',testDriveRate:'38%',finRate:'30%',insRate:'40%'},'合肥C店':{unitProfit:'1.5万',testDriveRate:'45%',finRate:'34%',insRate:'46%'},'无锡A店':{unitProfit:'1.3万',testDriveRate:'40%',finRate:'30%',insRate:'43%'},'南通A店':{unitProfit:'1.2万',testDriveRate:'36%',finRate:'28%',insRate:'39%'}}}};
+
+const dealerList=[{id:'NJ-A',name:'南京A店',city:'南京',vehicles:'B, D',highStockCount:2,anomalyCount:19,status:'red'},{id:'NJ-B',name:'南京B店',city:'南京',vehicles:'A, D',highStockCount:0,anomalyCount:3,status:'green'},{id:'NJ-C',name:'南京C店',city:'南京',vehicles:'B, C',highStockCount:1,anomalyCount:5,status:'yellow'},{id:'SZ-A',name:'苏州A店',city:'苏州',vehicles:'A, C',highStockCount:2,anomalyCount:12,status:'red'},{id:'SZ-B',name:'苏州B店',city:'苏州',vehicles:'A, B',highStockCount:0,anomalyCount:6,status:'yellow'},{id:'SZ-C',name:'苏州C店',city:'苏州',vehicles:'C, D',highStockCount:1,anomalyCount:4,status:'yellow'},{id:'HF-A',name:'合肥A店',city:'合肥',vehicles:'A, C',highStockCount:1,anomalyCount:5,status:'yellow'},{id:'HF-B',name:'合肥B店',city:'合肥',vehicles:'C, B',highStockCount:2,anomalyCount:10,status:'red'},{id:'HF-C',name:'合肥C店',city:'合肥',vehicles:'B, D',highStockCount:0,anomalyCount:4,status:'green'},{id:'WX-A',name:'无锡A店',city:'无锡',vehicles:'A, D',highStockCount:0,anomalyCount:3,status:'green'},{id:'WX-B',name:'无锡B店',city:'无锡',vehicles:'B, C',highStockCount:1,anomalyCount:5,status:'yellow'},{id:'CZ-A',name:'常州A店',city:'常州',vehicles:'A, B',highStockCount:0,anomalyCount:2,status:'green'},{id:'NT-A',name:'南通A店',city:'南通',vehicles:'C, D',highStockCount:1,anomalyCount:4,status:'yellow'},{id:'XZ-A',name:'徐州A店',city:'徐州',vehicles:'A, C',highStockCount:0,anomalyCount:2,status:'green'}];
+const dealerKPIData={'南京A店':{salesRate:'66.2%',lossRate:'19.4%',npsRate:'15.1%',convRate:'78.7%',finRate:'68.1%',insRate:'74.5%',unitProfit:'¥7,066',expNPS:'58.6',testDrive:'57.4%',anomaly:19,status:'red',targets:{salesRate:'≥80%',lossRate:'≤10%',npsRate:'≤10%',convRate:'≥90%',finRate:'≥90%',insRate:'≥90%',unitProfit:'≥¥8,000',expNPS:'≥70'}},'南京B店':{salesRate:'91.3%',lossRate:'5.1%',npsRate:'6.8%',convRate:'93.2%',finRate:'88.1%',insRate:'92.4%',unitProfit:'¥8,350',expNPS:'76.4',testDrive:'72.8%',anomaly:3,status:'green',targets:{salesRate:'≥80%',lossRate:'≤10%',npsRate:'≤10%',convRate:'≥90%',finRate:'≥90%',insRate:'≥90%',unitProfit:'≥¥8,000',expNPS:'≥70'}},'南京C店':{salesRate:'84.7%',lossRate:'9.2%',npsRate:'9.8%',convRate:'86.1%',finRate:'82.3%',insRate:'89.7%',unitProfit:'¥7,820',expNPS:'68.1',testDrive:'64.5%',anomaly:5,status:'yellow',targets:{salesRate:'≥80%',lossRate:'≤10%',npsRate:'≤10%',convRate:'≥90%',finRate:'≥90%',insRate:'≥90%',unitProfit:'≥¥8,000',expNPS:'≥70'}},'苏州A店':{salesRate:'72.0%',lossRate:'18.0%',npsRate:'14.0%',convRate:'—',finRate:'74.0%',insRate:'81.0%',unitProfit:'¥7,680',expNPS:'63.7',testDrive:'62.4%',anomaly:12,status:'red',targets:{salesRate:'≥80%',lossRate:'≤10%',npsRate:'≤10%',convRate:'≥90%',finRate:'≥90%',insRate:'≥90%',unitProfit:'≥¥8,000',expNPS:'≥70'}},'苏州B店':{salesRate:'85.5%',lossRate:'8.8%',npsRate:'9.2%',convRate:'85.5%',finRate:'84.2%',insRate:'86.8%',unitProfit:'¥7,950',expNPS:'69.3',testDrive:'65.1%',anomaly:6,status:'yellow',targets:{salesRate:'≥80%',lossRate:'≤10%',npsRate:'≤10%',convRate:'≥90%',finRate:'≥90%',insRate:'≥90%',unitProfit:'≥¥8,000',expNPS:'≥70'}},'苏州C店':{salesRate:'88.0%',lossRate:'6.5%',npsRate:'7.1%',convRate:'89.0%',finRate:'90.5%',insRate:'90.3%',unitProfit:'¥8,100',expNPS:'72.8',testDrive:'69.2%',anomaly:4,status:'yellow',targets:{salesRate:'≥80%',lossRate:'≤10%',npsRate:'≤10%',convRate:'≥90%',finRate:'≥90%',insRate:'≥90%',unitProfit:'≥¥8,000',expNPS:'≥70'}},'合肥A店':{salesRate:'83.6%',lossRate:'10.2%',npsRate:'10.8%',convRate:'82.8%',finRate:'80.1%',insRate:'88.5%',unitProfit:'¥7,720',expNPS:'66.4',testDrive:'63.2%',anomaly:5,status:'yellow',targets:{salesRate:'≥80%',lossRate:'≤10%',npsRate:'≤10%',convRate:'≥90%',finRate:'≥90%',insRate:'≥90%',unitProfit:'≥¥8,000',expNPS:'≥70'}},'合肥B店':{salesRate:'77.8%',lossRate:'16.6%',npsRate:'12.9%',convRate:'—',finRate:'79.9%',insRate:'87.5%',unitProfit:'¥8,294',expNPS:'68.8',testDrive:'67.4%',anomaly:10,status:'red',targets:{salesRate:'≥80%',lossRate:'≤10%',npsRate:'≤10%',convRate:'≥90%',finRate:'≥90%',insRate:'≥90%',unitProfit:'≥¥8,000',expNPS:'≥70'}},'合肥C店':{salesRate:'92.3%',lossRate:'4.2%',npsRate:'5.9%',convRate:'92.3%',finRate:'93.1%',insRate:'94.2%',unitProfit:'¥8,620',expNPS:'79.5',testDrive:'75.1%',anomaly:4,status:'green',targets:{salesRate:'≥80%',lossRate:'≤10%',npsRate:'≤10%',convRate:'≥90%',finRate:'≥90%',insRate:'≥90%',unitProfit:'≥¥8,000',expNPS:'≥70'}},'无锡A店':{salesRate:'90.5%',lossRate:'5.8%',npsRate:'7.3%',convRate:'91.8%',finRate:'87.9%',insRate:'91.5%',unitProfit:'¥8,210',expNPS:'74.2',testDrive:'71.6%',anomaly:3,status:'green',targets:{salesRate:'≥80%',lossRate:'≤10%',npsRate:'≤10%',convRate:'≥90%',finRate:'≥90%',insRate:'≥90%',unitProfit:'≥¥8,000',expNPS:'≥70'}},'无锡B店':{salesRate:'83.2%',lossRate:'9.5%',npsRate:'10.1%',convRate:'84.6%',finRate:'81.8%',insRate:'87.2%',unitProfit:'¥7,890',expNPS:'67.5',testDrive:'64.8%',anomaly:5,status:'yellow',targets:{salesRate:'≥80%',lossRate:'≤10%',npsRate:'≤10%',convRate:'≥90%',finRate:'≥90%',insRate:'≥90%',unitProfit:'≥¥8,000',expNPS:'≥70'}},'常州A店':{salesRate:'93.1%',lossRate:'3.6%',npsRate:'5.2%',convRate:'94.5%',finRate:'92.8%',insRate:'95.1%',unitProfit:'¥8,790',expNPS:'81.3',testDrive:'77.2%',anomaly:2,status:'green',targets:{salesRate:'≥80%',lossRate:'≤10%',npsRate:'≤10%',convRate:'≥90%',finRate:'≥90%',insRate:'≥90%',unitProfit:'≥¥8,000',expNPS:'≥70'}},'南通A店':{salesRate:'86.1%',lossRate:'7.4%',npsRate:'8.6%',convRate:'87.3%',finRate:'85.6%',insRate:'90.1%',unitProfit:'¥8,040',expNPS:'70.6',testDrive:'68.5%',anomaly:4,status:'yellow',targets:{salesRate:'≥80%',lossRate:'≤10%',npsRate:'≤10%',convRate:'≥90%',finRate:'≥90%',insRate:'≥90%',unitProfit:'≥¥8,000',expNPS:'≥70'}},'徐州A店':{salesRate:'91.8%',lossRate:'4.5%',npsRate:'6.1%',convRate:'92.7%',finRate:'90.8%',insRate:'93.6%',unitProfit:'¥8,480',expNPS:'77.1',testDrive:'73.9%',anomaly:2,status:'green',targets:{salesRate:'≥80%',lossRate:'≤10%',npsRate:'≤10%',convRate:'≥90%',finRate:'≥90%',insRate:'≥90%',unitProfit:'≥¥8,000',expNPS:'≥70'}}};
+
+const roleKPIs={'大区副总':{all:[{name:'经销商销量目标达标率',value:'87.5%',target:'≥95%',status:'yellow',desc:'部分经销商连续未达标',action:'专项辅导低效经销商',task:'S-05'},{name:'Top3经销商销量贡献占比',value:'58.2%',target:'≤45%',status:'red',desc:'头部集中度过高风险',action:'培育腰部经销商',task:'S-06'},{name:'连续两期销量未达标经销商数',value:'0',target:'0',status:'green',desc:'',action:'',task:''},{name:'亏损经销商占比',value:'22.1%',target:'≤15%',status:'red',desc:'超出警戒线7个百分点',action:'逐店诊断亏损原因',task:'S-07'},{name:'多重经营风险经销商数',value:'8',target:'≤3',status:'yellow',desc:'高库存+亏损+低销量叠加',action:'制定一店一策方案',task:'S-08'},{name:'高库存风险经销商占比',value:'18.9%',target:'≤10%',status:'red',desc:'库存周转天数超90天',action:'启动库存消化专项行动',task:'S-09'},{name:'低NPS经销商占比',value:'16.3%',target:'≤10%',status:'red',desc:'客户体验问题突出',action:'服务流程标准化巡检',task:'S-10'},{name:'成交转化率达标经销商占比',value:'71.4%',target:'≥85%',status:'yellow',desc:'转化漏斗存在断裂',action:'销售能力专项培训',task:'S-11'}]},'市场经理':{all:[{name:'重点城市市占率达标率',value:'60.0%',target:'≥80%',status:'red',desc:'3城达标/5城未达标',action:'制定城市级市占率提升方案',task:'S-12'},{name:'线索转化率达标经销商占比',value:'55.2%',target:'≥80%',status:'red',desc:'多数经销商线索转化弱',action:'经销商端线索跟进赋能',task:'S-13'},{name:'市场活动归因订单达成率',value:'81.5%',target:'≥90%',status:'yellow',desc:'活动ROI有待提升',action:'优化活动投放策略',task:'S-14'},{name:'重点城市渠道健康度',value:'65.0%',target:'≥80%',status:'yellow',desc:'部分城市渠道覆盖不足',action:'渠道拓展与优化',task:'S-15'},{name:'竞品市占率差距',value:'-5.2pp',target:'≤-3pp',status:'red',desc:'与主要竞品差距扩大',action:'制定竞品应对策略',task:'S-16'},{name:'市场预算执行率',value:'88.3%',target:'≥90%',status:'yellow',desc:'',action:'加速预算执行',task:'S-17'},{name:'品牌健康度NPS',value:'72.1',target:'≥80',status:'yellow',desc:'品牌口碑有待提升',action:'品牌传播计划优化',task:'S-18'},{name:'市场条线关键岗位流失率',value:'12.5%',target:'≤10%',status:'red',desc:'市场部人才流失',action:'完善市场团队激励',task:'S-19'}]},'新媒体经理':{all:[{name:'区域账号有效粉丝净增长率',value:'12.1%',target:'≥10%',status:'green',desc:'',action:'',task:''},{name:'线上有效线索目标达成率',value:'58.3%',target:'≥85%',status:'red',desc:'线索获取严重不足',action:'加大优质内容产出',task:'S-20'},{name:'线上归因订单目标达成率',value:'81.5%',target:'≥90%',status:'yellow',desc:'新媒体→成交链路待强化',action:'优化直播/短视频转化',task:'S-21'},{name:'线上线索达标经销商占比',value:'55.2%',target:'≥80%',status:'red',desc:'多数经销商新媒体能力弱',action:'经销商新媒体赋能培训',task:'S-22'},{name:'分平台内容产出计划达成率',value:'95.0%',target:'≥90%',status:'green',desc:'',action:'',task:''},{name:'线上单笔成交成本',value:'¥3,420',target:'≤¥2,000',status:'red',desc:'成本超出目标71%',action:'优化投放ROI',task:'S-23'},{name:'线上咨询服务满意率',value:'88.2%',target:'≥90%',status:'yellow',desc:'',action:'提升客服响应质量',task:'S-24'},{name:'线上线索到店率',value:'18.7%',target:'≥25%',status:'red',desc:'线上到线下转化弱',action:'优化到店邀约话术',task:'S-25'},{name:'线上线索试驾率',value:'35.8%',target:'≥30%',status:'green',desc:'',action:'',task:''},{name:'线上线索成交率',value:'3.9%',target:'≥8%',status:'red',desc:'成交漏斗末端断裂',action:'打通线索-成交全链路',task:'S-26'},{name:'线上线索成交率达标经销商占比',value:'84.1%',target:'≥80%',status:'green',desc:'',action:'',task:''},{name:'线上咨询5分钟有效响应率',value:'62.4%',target:'≥80%',status:'red',desc:'响应及时性不足',action:'建立自动+人工响应机制',task:'S-27'},{name:'新媒体条线关键岗位流失率',value:'15.2%',target:'≤10%',status:'red',desc:'人才流失严重',action:'完善激励与晋升机制',task:'S-28'}]},'零售经理':{all:[{name:'订单目标达成率',value:'74.6%',target:'≥90%',status:'red',desc:'缺口较大',action:'加强订单追踪与推进',task:'S-29'},{name:'订单退订率',value:'11.3%',target:'≤5%',status:'red',desc:'退订超出目标一倍',action:'分析退订原因并优化',task:'S-30'},{name:'销售顾问销量目标达标率',value:'92.1%',target:'≥90%',status:'green',desc:'',action:'',task:''},{name:'增值业务综合渗透率',value:'42.8%',target:'≥50%',status:'yellow',desc:'装饰/延保等渗透不足',action:'增值产品话术培训',task:'S-31'},{name:'金融渗透率',value:'38.5%',target:'≥50%',status:'red',desc:'金融方案推广不力',action:'金融专员一对一辅导',task:'S-32'},{name:'保险渗透率',value:'81.4%',target:'≥85%',status:'yellow',desc:'',action:'保险组合方案优化',task:'S-33'},{name:'置换渗透率',value:'15.2%',target:'≥12%',status:'green',desc:'',action:'',task:''},{name:'零售单车收益贡献',value:'¥18,200',target:'≥¥20,000',status:'yellow',desc:'单车收益未达标',action:'提升增值与金融渗透',task:'S-34'},{name:'高库存车型订单目标达成率',value:'52.1%',target:'≥75%',status:'red',desc:'高库存车型消化慢',action:'制定专项促销方案',task:'S-35'},{name:'销售体验NPS',value:'89.4',target:'≥95',status:'yellow',desc:'销售环节体验有短板',action:'销售服务流程标准化',task:'S-36'},{name:'分配线索首次跟进及时率',value:'72.8%',target:'≥85%',status:'yellow',desc:'跟进延迟影响转化',action:'30分钟响应机制',task:'S-37'},{name:'有效线索到店率',value:'42.3%',target:'≥40%',status:'green',desc:'',action:'',task:''},{name:'到店试驾率',value:'55.1%',target:'≥60%',status:'yellow',desc:'到店后试驾引导不足',action:'优化试驾体验流程',task:'S-38'},{name:'试驾后成交率',value:'58.2%',target:'≥65%',status:'yellow',desc:'试驾后跟进转化弱',action:'试驾后48h跟进制度',task:'S-39'},{name:'H级客户占比',value:'12.8%',target:'≥20%',status:'red',desc:'高意向客户储备不足',action:'加大潜客开发力度',task:'S-40'},{name:'H级客户成交率',value:'45.3%',target:'≥40%',status:'green',desc:'',action:'',task:''},{name:'零售条线关键岗位流失率',value:'14.8%',target:'≤10%',status:'red',desc:'销售顾问流失严重',action:'完善薪酬激励体系',task:'S-41'}]},'培训经理':{all:[{name:'参训低绩效人员业务达标率',value:'55.6%',target:'≥75%',status:'red',desc:'低绩效人员改善效果差',action:'定制化辅导方案',task:'S-42'},{name:'客户体验标准执行达标率',value:'87.1%',target:'≥90%',status:'yellow',desc:'',action:'神秘客暗访+反馈',task:'S-43'},{name:'实操考核通过率',value:'68.4%',target:'≥85%',status:'red',desc:'实操能力普遍不足',action:'增加实操演练频次',task:'S-44'},{name:'训后岗位应用达标率',value:'81.5%',target:'≥80%',status:'green',desc:'',action:'',task:''},{name:'新任关键岗位90天在岗率',value:'90.2%',target:'≥85%',status:'green',desc:'',action:'',task:''},{name:'新任关键岗位按期认证达标率',value:'82.3%',target:'≥90%',status:'yellow',desc:'',action:'加速认证流程',task:'S-45'},{name:'重点岗位应训覆盖率',value:'65.1%',target:'≥85%',status:'red',desc:'覆盖缺口大',action:'扩大培训覆盖面',task:'S-46'},{name:'必修培训按期完成率',value:'92.4%',target:'≥90%',status:'green',desc:'',action:'',task:''},{name:'岗位认证通过率',value:'85.7%',target:'≥90%',status:'yellow',desc:'',action:'考前辅导强化',task:'S-47'},{name:'课程内容更新及时率',value:'93.3%',target:'≥90%',status:'green',desc:'',action:'',task:''}]},'渠道交付经理':{all:[{name:'重点城市渠道覆盖率',value:'92.5%',target:'≥90%',status:'green',desc:'',action:'',task:''},{name:'渠道建设及升级项目按期达成率',value:'83.3%',target:'≥90%',status:'yellow',desc:'部分项目延期',action:'项目进度专项督办',task:'S-48'},{name:'交付目标达成率',value:'91.2%',target:'≥90%',status:'green',desc:'',action:'',task:''},{name:'库存深度（月）',value:'2.8',target:'≤1.5',status:'red',desc:'库存积压严重',action:'启动库存优化专项',task:'S-49'},{name:'超龄库存占比',value:'5.1%',target:'≤5%',status:'green',desc:'',action:'',task:''},{name:'热销车型缺货率',value:'8.7%',target:'≤5%',status:'yellow',desc:'热销车型供应紧张',action:'优化批售计划',task:'S-50'},{name:'批零匹配系数',value:'1.42',target:'0.9-1.1',status:'red',desc:'批发与零售严重不匹配',action:'调整批售节奏',task:'S-51'},{name:'准时交付率',value:'85.4%',target:'≥90%',status:'yellow',desc:'',action:'优化物流调度',task:'S-52'},{name:'一次交付合格率',value:'72.1%',target:'≥85%',status:'red',desc:'PDI检测通过率低',action:'加强出厂质检',task:'S-53'},{name:'交付流程标准执行达标率',value:'91.8%',target:'≥90%',status:'green',desc:'',action:'',task:''},{name:'交付体验NPS',value:'88.5',target:'≥95',status:'yellow',desc:'',action:'优化交付体验流程',task:'S-54'},{name:'渠道交付条线关键岗位流失率',value:'17.2%',target:'≤10%',status:'red',desc:'交付岗位流失严重',action:'完善岗位发展通道',task:'S-55'}]},'运营支持':{all:[{name:'销量滚动预测准确率',value:'91.5%',target:'≥90%',status:'green',desc:'',action:'',task:''},{name:'经营协同事项按期完成率',value:'84.2%',target:'≥90%',status:'yellow',desc:'协同效率待提升',action:'建立协同事项追踪机制',task:'S-56'},{name:'重点项目里程碑按期达成率',value:'65.0%',target:'≥85%',status:'red',desc:'多个项目里程碑延误',action:'项目红绿灯预警',task:'S-57'},{name:'总部重点任务落地达成率',value:'92.8%',target:'≥90%',status:'green',desc:'',action:'',task:''},{name:'重点经营异常响应及时率',value:'82.4%',target:'≥90%',status:'yellow',desc:'',action:'建立48h响应SLA',task:'S-58'},{name:'重点经营问题按期解决率',value:'60.0%',target:'≥80%',status:'red',desc:'问题解决率严重偏低',action:'问题闭环管理强化',task:'S-59'},{name:'重复经营问题发生率',value:'22.5%',target:'≤20%',status:'green',desc:'',action:'',task:''},{name:'核心经营系统稳定率',value:'87.1%',target:'≥95%',status:'yellow',desc:'系统偶发故障影响运营',action:'系统稳定性专项优化',task:'S-60'},{name:'运营支持条线关键岗位流失率',value:'12.8%',target:'≤10%',status:'red',desc:'支持岗位流失',action:'岗位价值认可与激励',task:'S-61'}]}};
+const taskData=[];['P-01','P-02','P-03','P-04','P-05','P-06','P-07','P-08'].forEach((id,i)=>{const kpis=['市占率','销量目标达成率','渠道商盈健康度','单车综合收益','库存深度','NPS','全链路成交转化率','关键岗位滚动流失率'];const drills=['marketShare','salesRate','profitHealth','unitProfit','stockDepth','nps','conversion','turnover'];taskData.push({id,priority:i<3||i===4||i===6||i===7?'P1':'P2',name:kpis[i]+'诊断',role:'大区总',kpi:kpis[i],drillType:drills[i]});});const roleTaskMap={'大区副总':[5,6,7,8,9,10,11],'市场经理':[12,13,14,15,16,17,18,19],'新媒体经理':[20,21,22,23,24,25,26,27,28],'零售经理':[29,30,31,32,33,34,35,36,37,38,39,40,41],'培训经理':[42,43,44,45,46,47],'渠道交付经理':[48,49,50,51,52,53,54,55],'运营支持':[56,57,58,59,60,61]};for(let i=1;i<=81;i++){const sid='S-'+String(i).padStart(2,'0');let role='大区总';for(const[r,ids]of Object.entries(roleTaskMap)){if(ids.includes(i)){role=r;break;}}taskData.push({id:sid,priority:i<=37?'P1':(i<=65?'P2':'P3'),name:'二级KPI诊断任务 '+sid,role:role,kpi:'二级KPI-'+i});}const taskStatuses=['进行中','进行中','已验证','已验证','进行中','已验证','已验证','进行中','已验证','进行中','已验证','进行中','已验证','已关闭','已验证','进行中','已验证','进行中','已验证','已验证','进行中','已关闭','已验证','进行中','已验证','已验证','进行中','已关闭','进行中','已验证','进行中','已关闭','已验证','进行中','已取消','已验证','进行中','已验证','进行中','已验证','已关闭','进行中','已验证','已取消','已验证','进行中','未开始','已验证','已关闭','未开始','进行中','已取消','未开始','已验证','进行中','未开始','已关闭','未开始','进行中','未开始','已验证','已关闭','未开始','进行中','未开始','已关闭','未开始','进行中','未开始','已取消','未开始','已关闭','未开始','未开始','已关闭','未开始','已取消','未开始','已关闭','未开始','已取消','未开始','已关闭','未开始','已取消','未开始','已关闭','未开始','已取消'];taskData.forEach((t,i)=>{t.status=taskStatuses[i];});
+
+// ==================== INIT DEALER SIDEBAR ====================
+(function initDealerSidebar(){const sub=document.getElementById('sub-dealer');const regions=[...new Set(dealerList.map(d=>d.city))];sub.innerHTML=regions.map(r=>{const dealers=dealerList.filter(d=>d.city===r);const totalAnomaly=dealers.reduce((s,d)=>s+d.anomalyCount,0);const hasRed=dealers.some(d=>d.status==='red');const overallStatus=hasRed?'red':(dealers.some(d=>d.status==='yellow')?'yellow':'green');return`<div class="nav-dealer-group"><div class="nav-dealer-region" data-nav="region-${r}" onclick="event.stopPropagation();switchDealerRegion('${r}')"><span class="dot ${overallStatus}"></span>${r}片区<span class="badge">${dealers.length}店 · ${totalAnomaly}异常</span></div><div class="nav-dealer-subs" id="sub-dealer-${r}">${dealers.map(d=>`<div class="nav-sub-item" data-nav="dealer-${d.id}" onclick="event.stopPropagation();switchDealerPage('${d.id}')"><span class="dot ${d.status}"></span>${d.name}<span class="badge">${d.anomalyCount}项异常</span></div>`).join('')}</div></div>`}).join('');})();
+
+// ==================== RENDER HELPERS ====================
+const sc=s=>s==='red'?'red':(s==='yellow'?'yellow':'green');
+const sl=s=>s==='red'?'预警':(s==='yellow'?'关注':'达标');
+
+function renderDashboard(){document.getElementById('page-dashboard').innerHTML=`
+<div class="summary-bar"><div class="summary-item"><div class="count red">5</div><div class="label">预警指标</div></div><div class="summary-item"><div class="count yellow">3</div><div class="label">关注指标</div></div><div class="summary-item"><div class="count green">0</div><div class="label">达标指标</div></div><div class="summary-item"><div class="count" style="color:var(--accent)">57</div><div class="label">异常二级KPI</div></div></div>
+<div class="section-title"><span class="dot-icon red"></span>一级KPI总览（8项）— 点击卡片查看下钻明细</div>
+<div class="kpi-grid">${dashboardKPIs.map(k=>`
+<div class="kpi-card" onclick="openDrilldown('${k.drillType}','${k.name.replace(/'/g,"\\'")}')">
+<div class="status-bar ${k.status}"></div>
+<div class="kpi-header"><span class="kpi-name">${k.name}</span><span class="kpi-badge ${k.status}">${sl(k.status)}</span></div>
+<div class="kpi-values"><span class="kpi-current ${k.status}">${k.value}</span><span class="kpi-target">目标: ${k.target}</span></div>
+<div class="kpi-footer"><span class="kpi-role">查看详情 →</span></div></div>`).join('')}</div>
+<div class="section-title" style="margin-top:20px;"><span class="dot-icon red"></span>异常二级KPI构成明细</div>
+<table class="data-table"><thead><tr><th>责任岗位</th><th>异常二级KPI数</th><th>代表指标</th><th>操作</th></tr></thead><tbody>
+<tr><td>零售经理</td><td style="color:var(--red);font-weight:600;">13</td><td>订单目标达成率、金融渗透率、流失率等</td><td><span class="task-link" onclick="switchRolePage('零售经理')">查看看板 →</span></td></tr>
+<tr><td>新媒体经理</td><td style="color:var(--red);font-weight:600;">9</td><td>线上线索目标达成率、成交成本、流失率等</td><td><span class="task-link" onclick="switchRolePage('新媒体经理')">查看看板 →</span></td></tr>
+<tr><td>市场经理</td><td style="color:var(--red);font-weight:600;">8</td><td>重点城市市占率、活动归因订单达成率等</td><td><span class="task-link" onclick="switchRolePage('市场经理')">查看看板 →</span></td></tr>
+<tr><td>大区副总</td><td style="color:var(--red);font-weight:600;">7</td><td>经销商销量达标率、亏损占比、库存风险等</td><td><span class="task-link" onclick="switchRolePage('大区副总')">查看看板 →</span></td></tr>
+<tr><td>渠道交付经理</td><td style="color:var(--red);font-weight:600;">6</td><td>库存深度、批零匹配系数、准时交付率等</td><td><span class="task-link" onclick="switchRolePage('渠道交付经理')">查看看板 →</span></td></tr>
+<tr><td>培训经理</td><td style="color:var(--red);font-weight:600;">5</td><td>参训低绩效达标率、实操考核通过率等</td><td><span class="task-link" onclick="switchRolePage('培训经理')">查看看板 →</span></td></tr>
+<tr><td>运营支持</td><td style="color:var(--red);font-weight:600;">5</td><td>项目里程碑达成率、经营问题解决率等</td><td><span class="task-link" onclick="switchRolePage('运营支持')">查看看板 →</span></td></tr></tbody></table>`;}
+
+// ==================== DRILLDOWN ====================
+function openDrilldown(type,name){
+  const panel=document.getElementById('drilldownPanel');
+  let html='',d,st,pm;const taskMap={marketShare:'P-01',salesRate:'P-02',profitHealth:'P-03',unitProfit:'P-04',stockDepth:'P-05',nps:'P-06',conversion:'P-07',turnover:'P-08'};
+  if(type==='marketShare'){
+    d=marketShareDetail;html=drilldownHeader(name,d.summary,taskMap[type])+`<table class="data-table"><thead><tr><th>片区</th><th>当前值</th><th>目标</th><th>差距</th><th>状态</th><th>异常说明</th></tr></thead><tbody>${d.rows.map(r=>`<tr><td>${r.name}</td><td style="font-weight:600;color:var(--red)">${r.value}</td><td>${r.target}</td><td style="color:var(--red)">${r.gap||''}</td><td><span class="status-pill red">预警</span></td><td>${r.note||''}</td></tr>`).join('')}</tbody></table><div class="section-title">重点城市市占率达标率</div><table class="data-table"><thead><tr><th>城市</th><th>达标率</th><th>目标</th><th>差距</th><th>状态</th></tr></thead><tbody>${d.cities.map(c=>`<tr><td>${c.name}</td><td style="font-weight:600;color:var(--red)">${c.value}</td><td>${c.target}</td><td style="color:var(--red)">${c.gap}</td><td><span class="status-pill red">预警</span></td></tr>`).join('')}</tbody></table>${insightBox(d.insight,'warn')}`;
+  }else if(type==='salesRate'){
+    d=salesRateDetail;html=drilldownHeader(name,d.summary,taskMap[type])+`<table class="data-table"><thead><tr><th>经销商</th><th>达成率</th><th>目标</th><th>差距</th><th>状态</th><th>说明</th></tr></thead><tbody>${d.rows.map(r=>`<tr><td style="font-weight:600;">${r.name}</td><td style="font-weight:600;color:var(--${r.gap?'red':'green'})">${r.value}</td><td>${r.target}</td><td style="color:var(--${r.gap?'red':'green'})">${r.gap||'达标'}</td><td><span class="status-pill ${r.status}">${sl(r.status)}</span></td><td style="color:var(--text-muted)">${r.note||''}</td></tr>`).join('')}</tbody></table>${insightBox(d.insight,'warn')}`;
+  }else if(type==='profitHealth'){
+    d=profitHealthDetail;html=drilldownHeader(name,d.summary,taskMap[type])+`<table class="data-table"><thead><tr><th>经销商</th><th>盈利状态</th><th>亏损程度</th><th>关键原因</th><th>状态</th></tr></thead><tbody>${d.rows.map(r=>`<tr><td style="font-weight:600;">${r.name}</td><td style="font-weight:600;color:var(--${r.status==='red'?'red':r.status==='yellow'?'yellow':'green'})">${r.value}</td><td style="color:var(--${r.status==='red'?'red':'text-secondary'})">${r.level}</td><td style="font-size:11px;color:var(--text-muted)">${r.note}</td><td><span class="status-pill ${r.status}">${sl(r.status)}</span></td></tr>`).join('')}</tbody></table>${insightBox(d.insight,'warn')}`;
+  }else if(type==='unitProfit'){
+    d=unitProfitDetail;html=drilldownHeader(name,d.summary,taskMap[type])+`<table class="data-table"><thead><tr><th>车型</th><th>单车收益</th><th>目标</th><th>差距</th><th>状态</th><th>说明</th></tr></thead><tbody>${d.rows.map(r=>`<tr><td style="font-weight:600;">${r.name}</td><td style="font-weight:600;color:var(--${r.status})">${r.value}</td><td>${r.target}</td><td style="color:var(--${r.status})">${r.gap}</td><td><span class="status-pill ${r.status}">${sl(r.status)}</span></td><td style="color:var(--text-muted);font-size:11px;">${r.note}</td></tr>`).join('')}</tbody></table><div class="section-title">收益构成占比</div>${d.byComponent.map(r=>`<div class="bar-row"><span class="bar-label">${r.name}</span><div class="bar-track"><div class="bar-fill ${r.status}" style="width:${parseFloat(r.value)}%"></div></div><span class="bar-val" style="color:var(--${r.status})">${r.value}</span></div>`).join('')}${insightBox(d.insight,'warn')}`;
+  }else if(type==='stockDepth'){
+    d=stockDepthDetail;html=drilldownHeader(name,d.summary,taskMap[type])+`<table class="data-table"><thead><tr><th>车型</th><th>门店数</th><th>总库存(台)</th><th>近30日零售</th><th>实际订单</th><th>超90天库存</th><th>库存深度(月)</th><th>高库存门店</th></tr></thead><tbody>${d.vehicles.map(v=>`<tr><td style="font-weight:600;">${v.name}</td><td>${v.stores}</td><td style="font-weight:600;">${v.totalStock}</td><td>${v.retail30}</td><td>${v.orders}</td><td style="color:${v.over90>5?'var(--red)':'var(--text-secondary)'}">${v.over90}</td><td style="font-weight:600;color:${v.avgDepth>1.5?'var(--red)':'var(--green)'}">${v.avgDepth}</td><td><span class="status-pill ${v.highStockStores>0?'red':'green'}">${v.highStockStores}店</span></td></tr>`).join('')}</tbody></table>${insightBox(d.insight,'warn')}`;
+  }else if(type==='nps'){
+    d=npsDetail;html=drilldownHeader(name,d.summary,taskMap[type])+`<div class="section-title">按评价维度</div><table class="data-table"><thead><tr><th>维度</th><th>NPS</th><th>目标</th><th>状态</th><th>说明</th></tr></thead><tbody>${d.byDimension.map(r=>`<tr><td>${r.name}</td><td style="font-weight:600;color:var(--${r.status})">${r.value}</td><td>${r.target}</td><td><span class="status-pill ${r.status}">${sl(r.status)}</span></td><td style="color:var(--text-muted)">${r.note}</td></tr>`).join('')}</tbody></table>${insightBox(d.insight,'warn')}`;
+  }else if(type==='conversion'){
+    d=conversionDetail;html=drilldownHeader(name,d.summary,taskMap[type])+`<div class="section-title">按漏斗阶段</div><table class="data-table"><thead><tr><th>阶段</th><th>当前转化率</th><th>目标</th><th>状态</th><th>说明</th></tr></thead><tbody>${d.stages.map(r=>`<tr><td>${r.name}</td><td style="font-weight:600;color:var(--${r.status})">${r.value}</td><td>${r.target}</td><td><span class="status-pill ${r.status}">${sl(r.status)}</span></td><td style="color:var(--text-muted)">${r.note}</td></tr>`).join('')}</tbody></table>${insightBox(d.insight,'warn')}`;
+  }else if(type==='turnover'){
+    d=turnoverDetail;html=drilldownHeader(name,d.summary,taskMap[type])+`<div class="section-title">按岗位</div><table class="data-table"><thead><tr><th>岗位</th><th>流失率</th><th>目标</th><th>状态</th><th>说明</th></tr></thead><tbody>${d.byPosition.map(r=>`<tr><td>${r.name}</td><td style="font-weight:600;color:var(--${r.status})">${r.value}</td><td>${r.target}</td><td><span class="status-pill ${r.status}">${sl(r.status)}</span></td><td style="color:var(--text-muted)">${r.note}</td></tr>`).join('')}</tbody></table>${insightBox(d.insight,'warn')}`;
+  }
+  panel.innerHTML=html;
+  primaryDrillContext={type,name};
+  const drillableTypes=['salesRate','profitHealth','unitProfit','stockDepth','nps','conversion','turnover'];
+  panel.querySelectorAll('.data-table tbody tr').forEach(tr=>{
+    const td=tr.querySelector('td');if(!td)return;
+    if(drillableTypes.includes(type)){
+      tr.style.cursor='pointer';tr.classList.add('drillable-row');
+      tr.onclick=function(e){e.stopPropagation();secondaryDrilldown(type,td.textContent.trim(),td.textContent.trim());};
+    }else{
+      tr.classList.add('no-drill');
+    }
+  });
+  document.getElementById('drilldownOverlay').classList.add('open');
+}
+
+function drilldownHeader(name,s,taskId){return `<div class="panel-header"><span class="panel-title">${name} — 下钻明细${taskId?`<span class="panel-task-link" onclick="event.stopPropagation();jumpToTask('${taskId}')">检核任务 ${taskId} →</span>`:''}</span><button class="panel-close" onclick="closeDrilldown()">✕</button></div><div class="panel-stats"><div class="panel-stat"><div class="stat-value ${s.status}">${s.current}</div><div class="stat-label">当前值</div></div><div class="panel-stat"><div class="stat-value">${s.target}</div><div class="stat-label">目标值</div></div><div class="panel-stat"><div class="stat-value ${s.status}">${s.gap}</div><div class="stat-label">风险差距</div></div></div>`;}
+function insightBox(text,cls){return `<div class="insight-box${cls?' '+cls:''}"><div class="insight-title">分析洞察</div>${text}</div>`;}
+function closeDrilldown(){document.getElementById('drilldownOverlay').classList.remove('open');primaryDrillContext=null;}
+
+// ==================== SECONDARY DRILL-DOWN ====================
+let primaryDrillContext=null;
+const secondaryDrillData={
+marketShare:{
+'华东':{title:'华东片区 — 城市市占率明细',headers:['城市','市占率','目标','差距','状态','说明'],rows:[['上海','18.2%','20.0%','-1.8%','red','竞品降价冲击'],['南京','14.5%','16.0%','-1.5%','red','新能源渗透不足'],['杭州','16.1%','17.0%','-0.9%','yellow','促销后回升'],['苏州','15.8%','16.5%','-0.7%','yellow','渠道覆盖不足'],['合肥','13.2%','14.0%','-0.8%','yellow','竞品分流']],insight:'华东未达标，上海、南京为主拖累城市。'},
+'华南':{title:'华南片区 — 城市市占率明细',headers:['城市','市占率','目标','差距','状态','说明'],rows:[['广州','19.5%','20.5%','-1.0%','yellow','日系竞品压制'],['深圳','17.8%','18.5%','-0.7%','yellow','补贴退坡'],['东莞','15.2%','16.0%','-0.8%','yellow','下沉不足'],['佛山','14.8%','15.5%','-0.7%','yellow','价格战激烈']],insight:'华南四城均未达标，日系品牌压制明显。'},
+'华北':{title:'华北片区 — 城市市占率明细',headers:['城市','市占率','目标','差距','状态','说明'],rows:[['北京','21.3%','21.5%','-0.2%','yellow','限牌政策限制'],['天津','16.8%','17.0%','-0.2%','yellow','网约车竞品抢单'],['石家庄','14.5%','15.5%','-1.0%','red','竞品扩张'],['太原','13.1%','14.0%','-0.9%','yellow','消费降级']],insight:'华北差距较小但石家庄异常，需紧急补强。'},
+'西部':{title:'西部片区 — 城市市占率明细',headers:['城市','市占率','目标','差距','状态','说明'],rows:[['成都','20.8%','20.0%','+0.8%','green','标杆城市'],['重庆','19.2%','19.0%','+0.2%','green','补贴见效'],['西安','15.1%','16.0%','-0.9%','yellow','促销不足']],insight:'西部整体最佳，成都、重庆达标，西安需追赶。'},
+
+'杭州':{title:'杭州 — 各区市占率',headers:["区域", "市占率", "目标", "差距", "状态"],rows:[["杭州中心区", "16.1%", "17.0%", "-0.9%", "yellow"], ["杭州新区", "17.5%", "16.5%", "+1.0%", "green"]],insight:'杭州需重点攻坚。'},
+'苏州':{title:'苏州 — 各区市占率',headers:["区域", "市占率", "目标", "差距", "状态"],rows:[["苏州中心区", "15.8%", "16.5%", "-0.7%", "yellow"], ["苏州新区", "17.5%", "16.5%", "+1.0%", "green"]],insight:'苏州需重点攻坚。'},
+'合肥':{title:'合肥 — 各区市占率',headers:["区域", "市占率", "目标", "差距", "状态"],rows:[["合肥中心区", "13.2%", "14.0%", "-0.8%", "yellow"], ["合肥新区", "17.5%", "16.5%", "+1.0%", "green"]],insight:'合肥需重点攻坚。'},
+'东莞':{title:'东莞 — 各区市占率',headers:["区域", "市占率", "目标", "差距", "状态"],rows:[["东莞中心区", "15.2%", "16.0%", "-0.8%", "yellow"], ["东莞新区", "17.5%", "16.5%", "+1.0%", "green"]],insight:'东莞需重点攻坚。'},
+'佛山':{title:'佛山 — 各区市占率',headers:["区域", "市占率", "目标", "差距", "状态"],rows:[["佛山中心区", "14.8%", "15.5%", "-0.7%", "yellow"], ["佛山新区", "17.5%", "16.5%", "+1.0%", "green"]],insight:'佛山需重点攻坚。'},
+'北京':{title:'北京 — 各区市占率',headers:["区域", "市占率", "目标", "差距", "状态"],rows:[["北京中心区", "21.3%", "21.5%", "-0.2%", "yellow"], ["北京新区", "17.5%", "16.5%", "+1.0%", "green"]],insight:'北京需重点攻坚。'},
+'天津':{title:'天津 — 各区市占率',headers:["区域", "市占率", "目标", "差距", "状态"],rows:[["天津中心区", "16.8%", "17.0%", "-0.2%", "yellow"], ["天津新区", "17.5%", "16.5%", "+1.0%", "green"]],insight:'天津需重点攻坚。'},
+'石家庄':{title:'石家庄 — 各区市占率',headers:["区域", "市占率", "目标", "差距", "状态"],rows:[["石家庄中心区", "14.5%", "15.5%", "-1.0%", "red"], ["石家庄新区", "16.8%", "16.5%", "-1.5%", "red"]],insight:'石家庄需重点攻坚。'},
+'太原':{title:'太原 — 各区市占率',headers:["区域", "市占率", "目标", "差距", "状态"],rows:[["太原中心区", "13.1%", "14.0%", "-0.9%", "yellow"], ["太原新区", "17.5%", "16.5%", "+1.0%", "green"]],insight:'太原需重点攻坚。'},
+'成都':{title:'成都 — 各区市占率',headers:["区域", "市占率", "目标", "差距", "状态"],rows:[["成都中心区", "20.8%", "20.0%", "+0.8%", "green"], ["成都新区", "17.5%", "16.5%", "+1.0%", "green"]],insight:'成都表现良好。'},
+'重庆':{title:'重庆 — 各区市占率',headers:["区域", "市占率", "目标", "差距", "状态"],rows:[["重庆中心区", "19.2%", "19.0%", "+0.2%", "green"], ["重庆新区", "17.5%", "16.5%", "+1.0%", "green"]],insight:'重庆表现良好。'},
+'西安':{title:'西安 — 各区市占率',headers:["区域", "市占率", "目标", "差距", "状态"],rows:[["西安中心区", "15.1%", "16.0%", "-0.9%", "yellow"], ["西安新区", "17.5%", "16.5%", "+1.0%", "green"]],insight:'西安需重点攻坚。'},
+},
+salesRate:{
+'南京A店':{title:'南京A店 — 月度达成率趋势',headers:['月份','目标(台)','实际(台)','达成率','状态'],rows:[['1月','85','72','84.7%','red'],['2月','80','65','81.3%','red'],['3月','90','78','86.7%','yellow'],['4月','85','70','82.4%','red'],['5月','90','75','83.3%','red'],['6月','95','80','84.2%','red']],insight:'连续6月未达标，累计缺口最大。'},
+'上海B店':{title:'上海B店 — 月度达成率趋势',headers:['月份','目标(台)','实际(台)','达成率','状态'],rows:[['1月','120','105','87.5%','yellow'],['2月','115','98','85.2%','yellow'],['3月','125','112','89.6%','yellow'],['4月','120','108','90.0%','yellow'],['5月','130','118','90.8%','yellow'],['6月','130','115','88.5%','yellow']],insight:'半年累计约90%，年底冲刺压力大。'},
+'杭州C店':{title:'杭州C店 — 月度达成率趋势',headers:['月份','目标(台)','实际(台)','达成率','状态'],rows:[['1月','70','68','97.1%','green'],['2月','75','72','96.0%','green'],['3月','70','66','94.3%','green'],['4月','75','71','94.7%','green'],['5月','80','77','96.3%','green'],['6月','80','76','95.0%','green']],insight:'表现稳定在95%+，保持当前态势即可。'},
+'广州D店':{title:'广州D店 — 月度达成率趋势',headers:['月份','目标(台)','实际(台)','达成率','状态'],rows:[['1月','95','82','86.3%','yellow'],['2月','90','75','83.3%','red'],['3月','100','88','88.0%','yellow'],['4月','95','80','84.2%','yellow'],['5月','100','85','85.0%','yellow'],['6月','100','86','86.0%','yellow']],insight:'波动较大，2月为低谷，需稳定输出。'},
+'北京E店':{title:'北京E店 — 月度达成率趋势',headers:['月份','目标(台)','实际(台)','达成率','状态'],rows:[['1月','110','102','92.7%','green'],['2月','105','95','90.5%','green'],['3月','115','108','93.9%','green'],['4月','110','100','90.9%','green'],['5月','120','112','93.3%','green'],['6月','120','110','91.7%','green']],insight:'稳定保持在90%+，年底有望超额完成。'},
+
+'苏州A店':{title:'苏州A店 — 月度达成率趋势',headers:["月份", "目标(台)", "实际(台)", "达成率", "状态"],rows:[["1月", "85", "67", "78.8%", "red"], ["2月", "80", "64", "80.0%", "red"], ["3月", "90", "75", "83.3%", "red"], ["4月", "85", "68", "80.0%", "red"], ["5月", "90", "71", "78.9%", "red"], ["6月", "95", "80", "84.2%", "red"]],insight:'苏州A店近半年累计达成率较低，需重点关注。'},
+'合肥B店':{title:'合肥B店 — 月度达成率趋势',headers:["月份", "目标(台)", "实际(台)", "达成率", "状态"],rows:[["1月", "85", "70", "82.4%", "red"], ["2月", "80", "66", "82.5%", "red"], ["3月", "90", "72", "80.0%", "red"], ["4月", "85", "69", "81.2%", "red"], ["5月", "90", "71", "78.9%", "red"], ["6月", "95", "77", "81.1%", "red"]],insight:'合肥B店近半年累计达成率较低，需重点关注。'},
+'南京C店':{title:'南京C店 — 月度达成率趋势',headers:["月份", "目标(台)", "实际(台)", "达成率", "状态"],rows:[["1月", "95", "82", "86.3%", "red"], ["2月", "90", "79", "87.8%", "red"], ["3月", "100", "91", "91.0%", "yellow"], ["4月", "95", "87", "91.6%", "yellow"], ["5月", "100", "89", "89.0%", "yellow"], ["6月", "100", "91", "91.0%", "yellow"]],insight:'南京C店近半年约90%达成率，有提升空间。'},
+'苏州B店':{title:'苏州B店 — 月度达成率趋势',headers:["月份", "目标(台)", "实际(台)", "达成率", "状态"],rows:[["1月", "95", "86", "90.5%", "yellow"], ["2月", "90", "82", "91.1%", "yellow"], ["3月", "100", "90", "90.0%", "yellow"], ["4月", "95", "84", "88.4%", "yellow"], ["5月", "100", "88", "88.0%", "yellow"], ["6月", "100", "91", "91.0%", "yellow"]],insight:'苏州B店近半年约90%达成率，有提升空间。'},
+'苏州C店':{title:'苏州C店 — 月度达成率趋势',headers:["月份", "目标(台)", "实际(台)", "达成率", "状态"],rows:[["1月", "95", "84", "88.4%", "yellow"], ["2月", "90", "79", "87.8%", "red"], ["3月", "100", "91", "91.0%", "yellow"], ["4月", "95", "85", "89.5%", "yellow"], ["5月", "100", "88", "88.0%", "yellow"], ["6月", "100", "87", "87.0%", "red"]],insight:'苏州C店近半年约90%达成率，有提升空间。'},
+'合肥A店':{title:'合肥A店 — 月度达成率趋势',headers:["月份", "目标(台)", "实际(台)", "达成率", "状态"],rows:[["1月", "95", "86", "90.5%", "yellow"], ["2月", "90", "80", "88.9%", "yellow"], ["3月", "100", "87", "87.0%", "red"], ["4月", "95", "85", "89.5%", "yellow"], ["5月", "100", "86", "86.0%", "red"], ["6月", "100", "86", "86.0%", "red"]],insight:'合肥A店近半年约90%达成率，有提升空间。'},
+'无锡B店':{title:'无锡B店 — 月度达成率趋势',headers:["月份", "目标(台)", "实际(台)", "达成率", "状态"],rows:[["1月", "95", "82", "86.3%", "red"], ["2月", "90", "81", "90.0%", "yellow"], ["3月", "100", "90", "90.0%", "yellow"], ["4月", "95", "83", "87.4%", "red"], ["5月", "100", "86", "86.0%", "red"], ["6月", "100", "90", "90.0%", "yellow"]],insight:'无锡B店近半年约90%达成率，有提升空间。'},
+'南通A店':{title:'南通A店 — 月度达成率趋势',headers:["月份", "目标(台)", "实际(台)", "达成率", "状态"],rows:[["1月", "95", "84", "88.4%", "yellow"], ["2月", "90", "81", "90.0%", "yellow"], ["3月", "100", "91", "91.0%", "yellow"], ["4月", "95", "83", "87.4%", "red"], ["5月", "100", "87", "87.0%", "red"], ["6月", "100", "89", "89.0%", "yellow"]],insight:'南通A店近半年约90%达成率，有提升空间。'},
+'南京B店':{title:'南京B店 — 月度达成率趋势',headers:["月份", "目标(台)", "实际(台)", "达成率", "状态"],rows:[["1月", "100", "97", "97.0%", "green"], ["2月", "95", "91", "95.8%", "green"], ["3月", "105", "98", "93.3%", "yellow"], ["4月", "100", "93", "93.0%", "yellow"], ["5月", "110", "105", "95.5%", "green"], ["6月", "110", "104", "94.5%", "yellow"]],insight:'南京B店稳定在95%左右，保持当前态势。'},
+'合肥C店':{title:'合肥C店 — 月度达成率趋势',headers:["月份", "目标(台)", "实际(台)", "达成率", "状态"],rows:[["1月", "100", "96", "96.0%", "green"], ["2月", "95", "91", "95.8%", "green"], ["3月", "105", "100", "95.2%", "green"], ["4月", "100", "97", "97.0%", "green"], ["5月", "110", "103", "93.6%", "yellow"], ["6月", "110", "105", "95.5%", "green"]],insight:'合肥C店稳定在95%左右，保持当前态势。'},
+'无锡A店':{title:'无锡A店 — 月度达成率趋势',headers:["月份", "目标(台)", "实际(台)", "达成率", "状态"],rows:[["1月", "100", "92", "92.0%", "yellow"], ["2月", "95", "90", "94.7%", "yellow"], ["3月", "105", "98", "93.3%", "yellow"], ["4月", "100", "93", "93.0%", "yellow"], ["5月", "110", "104", "94.5%", "yellow"], ["6月", "110", "103", "93.6%", "yellow"]],insight:'无锡A店稳定在95%左右，保持当前态势。'},
+'常州A店':{title:'常州A店 — 月度达成率趋势',headers:["月份", "目标(台)", "实际(台)", "达成率", "状态"],rows:[["1月", "100", "92", "92.0%", "yellow"], ["2月", "95", "88", "92.6%", "yellow"], ["3月", "105", "98", "93.3%", "yellow"], ["4月", "100", "95", "95.0%", "green"], ["5月", "110", "104", "94.5%", "yellow"], ["6月", "110", "106", "96.4%", "green"]],insight:'常州A店稳定在95%左右，保持当前态势。'},
+'徐州A店':{title:'徐州A店 — 月度达成率趋势',headers:["月份", "目标(台)", "实际(台)", "达成率", "状态"],rows:[["1月", "100", "94", "94.0%", "yellow"], ["2月", "95", "89", "93.7%", "yellow"], ["3月", "105", "98", "93.3%", "yellow"], ["4月", "100", "94", "94.0%", "yellow"], ["5月", "110", "107", "97.3%", "green"], ["6月", "110", "105", "95.5%", "green"]],insight:'徐州A店稳定在95%左右，保持当前态势。'},
+},
+profitHealth:{
+'南京A店':{title:'南京A店 — 收支构成',headers:['项目','金额','状态','评级'],rows:[['新车销售收入','-45万','亏损','red'],['售后服务收入','+18万','盈利','green'],['金融保险佣金','+5万','盈利','green'],['二手车业务','-8万','亏损','red'],['固定成本','-32万','—','yellow'],['人力成本','-28万','超预算','red'],['市场费用','-15万','超预算','red'],['净利润','-105万','严重亏损','red']],insight:'新车大幅亏损+费用超预算，需专项整改。'},
+'合肥C店':{title:'合肥C店 — 收支构成',headers:['项目','金额','状态','评级'],rows:[['新车销售收入','+22万','盈利','green'],['售后服务收入','+25万','盈利','green'],['金融保险佣金','+8万','盈利','green'],['二手车业务','+3万','微盈','green'],['固定成本','-18万','—','green'],['人力成本','-20万','控制内','green'],['市场费用','-8万','控制内','green'],['净利润','+12万','盈利','green']],insight:'各项均衡且为正收益，盈利标杆门店。'},
+
+'苏州A店':{title:'苏州A店 — 收支构成',headers:["项目", "金额", "状态", "评级"],rows:[["新车销售收入", "-38万", "亏损", "red"], ["售后服务收入", "+15万", "盈利", "green"], ["金融保险佣金", "+4万", "盈利", "green"], ["二手车业务", "-6万", "亏损", "red"], ["固定成本", "-28万", "—", "yellow"], ["人力成本", "-25万", "超预算", "red"], ["市场费用", "-12万", "超预算", "red"], ["净利润", "-90万", "严重亏损", "red"]],insight:'苏州A店新车销售大幅亏损，费用超标严重。'},
+'合肥B店':{title:'合肥B店 — 收支构成',headers:["项目", "金额", "状态", "评级"],rows:[["新车销售收入", "-38万", "亏损", "red"], ["售后服务收入", "+15万", "盈利", "green"], ["金融保险佣金", "+4万", "盈利", "green"], ["二手车业务", "-6万", "亏损", "red"], ["固定成本", "-28万", "—", "yellow"], ["人力成本", "-25万", "超预算", "red"], ["市场费用", "-12万", "超预算", "red"], ["净利润", "-90万", "严重亏损", "red"]],insight:'合肥B店新车销售大幅亏损，费用超标严重。'},
+'南京C店':{title:'南京C店 — 收支构成',headers:["项目", "金额", "状态", "评级"],rows:[["新车销售收入", "+8万", "微盈", "yellow"], ["售后服务收入", "+18万", "盈利", "green"], ["金融保险佣金", "+5万", "盈利", "green"], ["二手车业务", "-2万", "微亏", "yellow"], ["固定成本", "-24万", "—", "yellow"], ["人力成本", "-20万", "超预算", "yellow"], ["市场费用", "-10万", "超预算", "yellow"], ["净利润", "-25万", "亏损", "yellow"]],insight:'南京C店新车微利，固定及人力成本偏高。'},
+'苏州B店':{title:'苏州B店 — 收支构成',headers:["项目", "金额", "状态", "评级"],rows:[["新车销售收入", "+8万", "微盈", "yellow"], ["售后服务收入", "+18万", "盈利", "green"], ["金融保险佣金", "+5万", "盈利", "green"], ["二手车业务", "-2万", "微亏", "yellow"], ["固定成本", "-24万", "—", "yellow"], ["人力成本", "-20万", "超预算", "yellow"], ["市场费用", "-10万", "超预算", "yellow"], ["净利润", "-25万", "亏损", "yellow"]],insight:'苏州B店新车微利，固定及人力成本偏高。'},
+'苏州C店':{title:'苏州C店 — 收支构成',headers:["项目", "金额", "状态", "评级"],rows:[["新车销售收入", "+8万", "微盈", "yellow"], ["售后服务收入", "+18万", "盈利", "green"], ["金融保险佣金", "+5万", "盈利", "green"], ["二手车业务", "-2万", "微亏", "yellow"], ["固定成本", "-24万", "—", "yellow"], ["人力成本", "-20万", "超预算", "yellow"], ["市场费用", "-10万", "超预算", "yellow"], ["净利润", "-25万", "亏损", "yellow"]],insight:'苏州C店新车微利，固定及人力成本偏高。'},
+'合肥A店':{title:'合肥A店 — 收支构成',headers:["项目", "金额", "状态", "评级"],rows:[["新车销售收入", "+8万", "微盈", "yellow"], ["售后服务收入", "+18万", "盈利", "green"], ["金融保险佣金", "+5万", "盈利", "green"], ["二手车业务", "-2万", "微亏", "yellow"], ["固定成本", "-24万", "—", "yellow"], ["人力成本", "-20万", "超预算", "yellow"], ["市场费用", "-10万", "超预算", "yellow"], ["净利润", "-25万", "亏损", "yellow"]],insight:'合肥A店新车微利，固定及人力成本偏高。'},
+'无锡B店':{title:'无锡B店 — 收支构成',headers:["项目", "金额", "状态", "评级"],rows:[["新车销售收入", "+8万", "微盈", "yellow"], ["售后服务收入", "+18万", "盈利", "green"], ["金融保险佣金", "+5万", "盈利", "green"], ["二手车业务", "-2万", "微亏", "yellow"], ["固定成本", "-24万", "—", "yellow"], ["人力成本", "-20万", "超预算", "yellow"], ["市场费用", "-10万", "超预算", "yellow"], ["净利润", "-25万", "亏损", "yellow"]],insight:'无锡B店新车微利，固定及人力成本偏高。'},
+'南通A店':{title:'南通A店 — 收支构成',headers:["项目", "金额", "状态", "评级"],rows:[["新车销售收入", "+8万", "微盈", "yellow"], ["售后服务收入", "+18万", "盈利", "green"], ["金融保险佣金", "+5万", "盈利", "green"], ["二手车业务", "-2万", "微亏", "yellow"], ["固定成本", "-24万", "—", "yellow"], ["人力成本", "-20万", "超预算", "yellow"], ["市场费用", "-10万", "超预算", "yellow"], ["净利润", "-25万", "亏损", "yellow"]],insight:'南通A店新车微利，固定及人力成本偏高。'},
+'南京B店':{title:'南京B店 — 收支构成',headers:["项目", "金额", "状态", "评级"],rows:[["新车销售收入", "+25万", "盈利", "green"], ["售后服务收入", "+22万", "盈利", "green"], ["金融保险佣金", "+7万", "盈利", "green"], ["二手车业务", "+4万", "盈利", "green"], ["固定成本", "-20万", "—", "green"], ["人力成本", "-18万", "控制内", "green"], ["市场费用", "-8万", "控制内", "green"], ["净利润", "+12万", "盈利", "green"]],insight:'南京B店各项均衡盈利，运营健康。'},
+'无锡A店':{title:'无锡A店 — 收支构成',headers:["项目", "金额", "状态", "评级"],rows:[["新车销售收入", "+25万", "盈利", "green"], ["售后服务收入", "+22万", "盈利", "green"], ["金融保险佣金", "+7万", "盈利", "green"], ["二手车业务", "+4万", "盈利", "green"], ["固定成本", "-20万", "—", "green"], ["人力成本", "-18万", "控制内", "green"], ["市场费用", "-8万", "控制内", "green"], ["净利润", "+12万", "盈利", "green"]],insight:'无锡A店各项均衡盈利，运营健康。'},
+'常州A店':{title:'常州A店 — 收支构成',headers:["项目", "金额", "状态", "评级"],rows:[["新车销售收入", "+25万", "盈利", "green"], ["售后服务收入", "+22万", "盈利", "green"], ["金融保险佣金", "+7万", "盈利", "green"], ["二手车业务", "+4万", "盈利", "green"], ["固定成本", "-20万", "—", "green"], ["人力成本", "-18万", "控制内", "green"], ["市场费用", "-8万", "控制内", "green"], ["净利润", "+12万", "盈利", "green"]],insight:'常州A店各项均衡盈利，运营健康。'},
+'徐州A店':{title:'徐州A店 — 收支构成',headers:["项目", "金额", "状态", "评级"],rows:[["新车销售收入", "+25万", "盈利", "green"], ["售后服务收入", "+22万", "盈利", "green"], ["金融保险佣金", "+7万", "盈利", "green"], ["二手车业务", "+4万", "盈利", "green"], ["固定成本", "-20万", "—", "green"], ["人力成本", "-18万", "控制内", "green"], ["市场费用", "-8万", "控制内", "green"], ["净利润", "+12万", "盈利", "green"]],insight:'徐州A店各项均衡盈利，运营健康。'},
+},
+unitProfit:{
+'A 型':{title:'A型 — 各经销商单车收益',headers:['经销商','单车收益','状态'],rows:[['南京A店','-2,800元/台','red'],['上海B店','+800元/台','green'],['杭州C店','+1,200元/台','green'],['广州D店','-500元/台','yellow'],['北京E店','+1,500元/台','green'],['深圳F店','-1,100元/台','red']],insight:'A型收益偏低，南京和深圳为负收益。'},
+'B 型':{title:'B型 — 各经销商单车收益',headers:['经销商','单车收益','状态'],rows:[['南京A店','-1,500元/台','yellow'],['上海B店','+2,200元/台','green'],['杭州C店','+3,000元/台','green'],['广州D店','+500元/台','green'],['北京E店','+2,800元/台','green'],['深圳F店','+200元/台','green']],insight:'B型整体收益良好，仅南京为负。'},
+'C 型':{title:'C型 — 各经销商单车收益',headers:['经销商','单车收益','状态'],rows:[['南京A店','-3,200元/台','red'],['上海B店','+1,800元/台','green'],['杭州C店','+2,100元/台','green'],['广州D店','+300元/台','green'],['北京E店','+2,500元/台','green'],['深圳F店','-600元/台','yellow']],insight:'C型南京严重亏损，其他门店表现不错。'},
+'D 型':{title:'D型 — 各经销商单车收益',headers:['经销商','单车收益','状态'],rows:[['南京A店','-800元/台','yellow'],['上海B店','+3,500元/台','green'],['杭州C店','+4,200元/台','green'],['广州D店','+1,600元/台','green'],['北京E店','+3,800元/台','green'],['深圳F店','+900元/台','green']],insight:'D型收益整体健康，标杆车型。'},
+},
+stockDepth:{
+'A 型':{title:'A型 — 各经销商库存',headers:['经销商','库存(台)','近30日零售','库存深度(月)','状态'],rows:[['南京A店','85','28','3.0','red'],['上海B店','42','18','2.3','yellow'],['杭州C店','28','15','1.9','green'],['广州D店','55','22','2.5','yellow'],['北京E店','25','16','1.6','green'],['深圳F店','48','20','2.4','yellow']],insight:'A型库存压力大，多家超2个月。'},
+'B 型':{title:'B型 — 各经销商库存',headers:['经销商','库存(台)','近30日零售','库存深度(月)','状态'],rows:[['南京A店','68','32','2.1','yellow'],['上海B店','38','20','1.9','green'],['杭州C店','22','18','1.2','green'],['广州D店','45','25','1.8','green'],['北京E店','30','22','1.4','green'],['深圳F店','35','18','1.9','green']],insight:'B型库存整体可控，平均约1.7个月。'},
+'C 型':{title:'C型 — 各经销商库存',headers:['经销商','库存(台)','近30日零售','库存深度(月)','状态'],rows:[['南京A店','95','25','3.8','red'],['上海B店','52','22','2.4','yellow'],['杭州C店','35','20','1.8','green'],['广州D店','62','28','2.2','yellow'],['北京E店','28','18','1.6','green'],['深圳F店','58','24','2.4','yellow']],insight:'C型库存最严重，南京高达3.8个月。'},
+'D 型':{title:'D型 — 各经销商库存',headers:['经销商','库存(台)','近30日零售','库存深度(月)','状态'],rows:[['南京A店','40','20','2.0','green'],['上海B店','28','18','1.6','green'],['杭州C店','18','15','1.2','green'],['广州D店','32','22','1.5','green'],['北京E店','22','18','1.2','green'],['深圳F店','30','20','1.5','green']],insight:'D型库存全部健康，均<2个月。'},
+},
+nps:{
+'销售体验':{title:'销售体验 — 各经销商NPS',headers:['经销商','NPS','目标','状态'],rows:[['南京A店','54','70','red'],['南京B店','77','70','green'],['南京C店','76','70','green'],['苏州A店','61','70','red'],['苏州B店','74','70','green'],['苏州C店','76','70','green'],['合肥A店','75','70','green'],['合肥B店','61','70','red'],['合肥C店','85','70','green'],['无锡A店','85','70','green'],['无锡B店','54','70','red'],['常州A店','80','70','green'],['南通A店','81','70','green'],['徐州A店','82','70','green']],insight:'销售体验维度3家预警，南京A店(55)为最低分。核心短板在报价透明度，建议统一报价模板并推行透明议价流程。'},
+'售后服务':{title:'售后服务 — 各经销商NPS',headers:['经销商','NPS','目标','状态'],rows:[['南京A店','59','68','red'],['南京B店','73','68','green'],['南京C店','77','68','green'],['苏州A店','55','68','red'],['苏州B店','74','68','green'],['苏州C店','82','68','green'],['合肥A店','81','68','green'],['合肥B店','55','68','red'],['合肥C店','77','68','green'],['无锡A店','78','68','green'],['无锡B店','69','68','green'],['常州A店','79','68','green'],['南通A店','80','68','green'],['徐州A店','68','68','green']],insight:'售后服务维度3家预警，配件价格和等待时长为普遍痛点。建议推出保养套餐降低用户感知成本。'},
+'交车体验':{title:'交车体验 — 各经销商NPS',headers:['经销商','NPS','目标','状态'],rows:[['南京A店','57','70','red'],['南京B店','81','70','green'],['南京C店','71','70','green'],['苏州A店','83','70','green'],['苏州B店','80','70','green'],['苏州C店','75','70','green'],['合肥A店','75','70','green'],['合肥B店','54','70','red'],['合肥C店','80','70','green'],['无锡A店','76','70','green'],['无锡B店','81','70','green'],['常州A店','71','70','green'],['南通A店','74','70','green'],['徐州A店','70','70','green']],insight:'交车体验整体偏弱，南京A店(62)和合肥B店(64)低于目标。功能讲解环节需加强，建议增设专属交车顾问。'},
+'产品满意度':{title:'产品满意度 — 各经销商NPS',headers:['经销商','NPS','目标','状态'],rows:[['南京A店','60','72','red'],['南京B店','73','72','green'],['南京C店','79','72','green'],['苏州A店','55','72','red'],['苏州B店','84','72','green'],['苏州C店','76','72','green'],['合肥A店','87','72','green'],['合肥B店','59','72','red'],['合肥C店','80','72','green'],['无锡A店','86','72','green'],['无锡B店','62','72','red'],['常州A店','80','72','green'],['南通A店','86','72','green'],['徐州A店','86','72','green']],insight:'产品满意度3家预警，油耗/电耗与智能体验为主要减分项。需产品端跟进OTA升级与能耗优化。'},
+'品牌口碑':{title:'品牌口碑 — 各经销商NPS',headers:['经销商','NPS','目标','状态'],rows:[['南京A店','48','65','red'],['南京B店','73','65','green'],['南京C店','47','65','red'],['苏州A店','50','65','red'],['苏州B店','69','65','green'],['苏州C店','78','65','green'],['合肥A店','70','65','green'],['合肥B店','50','65','red'],['合肥C店','80','65','green'],['无锡A店','74','65','green'],['无锡B店','51','65','red'],['常州A店','75','65','green'],['南通A店','65','65','green'],['徐州A店','77','65','green']],insight:'品牌口碑最弱维度，5家预警。亲友推荐率全国走低，建议重建口碑传播激励体系，从NPS存量用户中挖掘KOC。'},
+'南京A店':{title:'南京A店 — 各维度NPS',headers:['维度','NPS','目标','状态'],rows:[['销售体验','55','70','red'],['售后服务','60','68','red'],['交车体验','62','70','red'],['产品满意度','65','72','yellow'],['品牌口碑','50','65','red']],insight:'全维度不达标，NPS主要拖累源。'},
+'合肥C店':{title:'合肥C店 — 各维度NPS',headers:['维度','NPS','目标','状态'],rows:[['销售体验','78','75','green'],['售后服务','76','72','green'],['交车体验','80','75','green'],['产品满意度','82','78','green'],['品牌口碑','75','70','green']],insight:'全部达标，NPS区域标杆。'},
+
+'苏州A店':{title:'苏州A店 — 各维度NPS',headers:["维度", "NPS", "目标", "状态"],rows:[["销售体验", "58", "72", "red"], ["售后服务", "62", "68", "red"], ["交车体验", "65", "70", "yellow"], ["产品满意度", "68", "72", "yellow"], ["品牌口碑", "55", "65", "red"]],insight:'多数维度不达标，品牌口碑为最大短板。'},
+'合肥B店':{title:'合肥B店 — 各维度NPS',headers:["维度", "NPS", "目标", "状态"],rows:[["销售体验", "58", "72", "red"], ["售后服务", "62", "68", "red"], ["交车体验", "65", "70", "yellow"], ["产品满意度", "68", "72", "yellow"], ["品牌口碑", "55", "65", "red"]],insight:'多数维度不达标，品牌口碑为最大短板。'},
+'南京C店':{title:'南京C店 — 各维度NPS',headers:["维度", "NPS", "目标", "状态"],rows:[["销售体验", "65", "72", "yellow"], ["售后服务", "68", "68", "green"], ["交车体验", "70", "70", "green"], ["产品满意度", "70", "72", "yellow"], ["品牌口碑", "62", "65", "yellow"]],insight:'整体偏弱，销售体验和品牌口碑待改善。'},
+'苏州B店':{title:'苏州B店 — 各维度NPS',headers:["维度", "NPS", "目标", "状态"],rows:[["销售体验", "65", "72", "yellow"], ["售后服务", "68", "68", "green"], ["交车体验", "70", "70", "green"], ["产品满意度", "70", "72", "yellow"], ["品牌口碑", "62", "65", "yellow"]],insight:'整体偏弱，销售体验和品牌口碑待改善。'},
+'苏州C店':{title:'苏州C店 — 各维度NPS',headers:["维度", "NPS", "目标", "状态"],rows:[["销售体验", "65", "72", "yellow"], ["售后服务", "68", "68", "green"], ["交车体验", "70", "70", "green"], ["产品满意度", "70", "72", "yellow"], ["品牌口碑", "62", "65", "yellow"]],insight:'整体偏弱，销售体验和品牌口碑待改善。'},
+'合肥A店':{title:'合肥A店 — 各维度NPS',headers:["维度", "NPS", "目标", "状态"],rows:[["销售体验", "65", "72", "yellow"], ["售后服务", "68", "68", "green"], ["交车体验", "70", "70", "green"], ["产品满意度", "70", "72", "yellow"], ["品牌口碑", "62", "65", "yellow"]],insight:'整体偏弱，销售体验和品牌口碑待改善。'},
+'无锡B店':{title:'无锡B店 — 各维度NPS',headers:["维度", "NPS", "目标", "状态"],rows:[["销售体验", "65", "72", "yellow"], ["售后服务", "68", "68", "green"], ["交车体验", "70", "70", "green"], ["产品满意度", "70", "72", "yellow"], ["品牌口碑", "62", "65", "yellow"]],insight:'整体偏弱，销售体验和品牌口碑待改善。'},
+'南通A店':{title:'南通A店 — 各维度NPS',headers:["维度", "NPS", "目标", "状态"],rows:[["销售体验", "65", "72", "yellow"], ["售后服务", "68", "68", "green"], ["交车体验", "70", "70", "green"], ["产品满意度", "70", "72", "yellow"], ["品牌口碑", "62", "65", "yellow"]],insight:'整体偏弱，销售体验和品牌口碑待改善。'},
+'南京B店':{title:'南京B店 — 各维度NPS',headers:["维度", "NPS", "目标", "状态"],rows:[["销售体验", "75", "72", "green"], ["售后服务", "74", "68", "green"], ["交车体验", "78", "70", "green"], ["产品满意度", "80", "72", "green"], ["品牌口碑", "72", "65", "green"]],insight:'全部达标，NPS标杆。'},
+'无锡A店':{title:'无锡A店 — 各维度NPS',headers:["维度", "NPS", "目标", "状态"],rows:[["销售体验", "75", "72", "green"], ["售后服务", "74", "68", "green"], ["交车体验", "78", "70", "green"], ["产品满意度", "80", "72", "green"], ["品牌口碑", "72", "65", "green"]],insight:'全部达标，NPS标杆。'},
+'常州A店':{title:'常州A店 — 各维度NPS',headers:["维度", "NPS", "目标", "状态"],rows:[["销售体验", "75", "72", "green"], ["售后服务", "74", "68", "green"], ["交车体验", "78", "70", "green"], ["产品满意度", "80", "72", "green"], ["品牌口碑", "72", "65", "green"]],insight:'全部达标，NPS标杆。'},
+'徐州A店':{title:'徐州A店 — 各维度NPS',headers:["维度", "NPS", "目标", "状态"],rows:[["销售体验", "75", "72", "green"], ["售后服务", "74", "68", "green"], ["交车体验", "78", "70", "green"], ["产品满意度", "80", "72", "green"], ["品牌口碑", "72", "65", "green"]],insight:'全部达标，NPS标杆。'},
+},
+conversion:{
+'线索→到店':{title:'线索→到店 — 各经销商转化率',headers:['经销商','转化率','目标','状态'],rows:[['南京A店','32%','40%','red'],['上海B店','38%','40%','yellow'],['杭州C店','42%','40%','green'],['广州D店','35%','40%','yellow'],['北京E店','40%','40%','green'],['深圳F店','33%','40%','red']],insight:'南京A店和深圳F店线索质量或邀约能力有问题。'},
+'到店→试驾':{title:'到店→试驾 — 各经销商转化率',headers:['经销商','转化率','目标','状态'],rows:[['南京A店','55%','65%','red'],['上海B店','60%','65%','yellow'],['杭州C店','68%','65%','green'],['广州D店','58%','65%','yellow'],['北京E店','65%','65%','green'],['深圳F店','52%','65%','red']],insight:'南京和深圳试驾转化低，销售接待有问题。'},
+'试驾→报价':{title:'试驾→报价 — 各经销商转化率',headers:['经销商','转化率','目标','状态'],rows:[['南京A店','70%','75%','yellow'],['上海B店','72%','75%','yellow'],['杭州C店','78%','75%','green'],['广州D店','68%','75%','yellow'],['北京E店','76%','75%','green'],['深圳F店','65%','75%','red']],insight:'多数门店未达标，试驾后跟进不足。'},
+'报价→成交':{title:'报价→成交 — 各经销商转化率',headers:['经销商','转化率','目标','状态'],rows:[['南京A店','45%','55%','red'],['上海B店','50%','55%','yellow'],['杭州C店','58%','55%','green'],['广州D店','48%','55%','yellow'],['北京E店','55%','55%','green'],['深圳F店','42%','55%','red']],insight:'报价到成交是最大瓶颈，议价能力弱。'},
+'南京A店':{title:'南京A店 — 漏斗各阶段',headers:['阶段','转化率','目标','状态'],rows:[['线索→到店','32%','40%','red'],['到店→试驾','55%','65%','red'],['试驾→报价','70%','75%','yellow'],['报价→成交','45%','55%','red'],['全链路','5.5%','8.0%','red']],insight:'全链路5.5%远低于目标8%，需全流程整改。'},
+
+'苏州A店':{title:'苏州A店 — 漏斗各阶段',headers:["阶段", "转化率", "目标", "状态"],rows:[["线索→到店", "33%", "40%", "red"], ["到店→试驾", "52%", "65%", "red"], ["试驾→报价", "68%", "75%", "yellow"], ["报价→成交", "42%", "55%", "red"], ["全链路", "4.8%", "8.0%", "red"]],insight:'苏州A店全链路转化率需改善。'},
+'合肥B店':{title:'合肥B店 — 漏斗各阶段',headers:["阶段", "转化率", "目标", "状态"],rows:[["线索→到店", "33%", "40%", "red"], ["到店→试驾", "52%", "65%", "red"], ["试驾→报价", "68%", "75%", "yellow"], ["报价→成交", "42%", "55%", "red"], ["全链路", "4.8%", "8.0%", "red"]],insight:'合肥B店全链路转化率需改善。'},
+'南京C店':{title:'南京C店 — 漏斗各阶段',headers:["阶段", "转化率", "目标", "状态"],rows:[["线索→到店", "37%", "40%", "yellow"], ["到店→试驾", "60%", "65%", "yellow"], ["试驾→报价", "72%", "75%", "yellow"], ["报价→成交", "50%", "55%", "yellow"], ["全链路", "7.9%", "8.0%", "yellow"]],insight:'南京C店全链路转化率需改善。'},
+'苏州B店':{title:'苏州B店 — 漏斗各阶段',headers:["阶段", "转化率", "目标", "状态"],rows:[["线索→到店", "37%", "40%", "yellow"], ["到店→试驾", "60%", "65%", "yellow"], ["试驾→报价", "72%", "75%", "yellow"], ["报价→成交", "50%", "55%", "yellow"], ["全链路", "7.9%", "8.0%", "yellow"]],insight:'苏州B店全链路转化率需改善。'},
+'苏州C店':{title:'苏州C店 — 漏斗各阶段',headers:["阶段", "转化率", "目标", "状态"],rows:[["线索→到店", "37%", "40%", "yellow"], ["到店→试驾", "60%", "65%", "yellow"], ["试驾→报价", "72%", "75%", "yellow"], ["报价→成交", "50%", "55%", "yellow"], ["全链路", "7.9%", "8.0%", "yellow"]],insight:'苏州C店全链路转化率需改善。'},
+'合肥A店':{title:'合肥A店 — 漏斗各阶段',headers:["阶段", "转化率", "目标", "状态"],rows:[["线索→到店", "37%", "40%", "yellow"], ["到店→试驾", "60%", "65%", "yellow"], ["试驾→报价", "72%", "75%", "yellow"], ["报价→成交", "50%", "55%", "yellow"], ["全链路", "7.9%", "8.0%", "yellow"]],insight:'合肥A店全链路转化率需改善。'},
+'无锡B店':{title:'无锡B店 — 漏斗各阶段',headers:["阶段", "转化率", "目标", "状态"],rows:[["线索→到店", "37%", "40%", "yellow"], ["到店→试驾", "60%", "65%", "yellow"], ["试驾→报价", "72%", "75%", "yellow"], ["报价→成交", "50%", "55%", "yellow"], ["全链路", "7.9%", "8.0%", "yellow"]],insight:'无锡B店全链路转化率需改善。'},
+'南通A店':{title:'南通A店 — 漏斗各阶段',headers:["阶段", "转化率", "目标", "状态"],rows:[["线索→到店", "37%", "40%", "yellow"], ["到店→试驾", "60%", "65%", "yellow"], ["试驾→报价", "72%", "75%", "yellow"], ["报价→成交", "50%", "55%", "yellow"], ["全链路", "7.9%", "8.0%", "yellow"]],insight:'南通A店全链路转化率需改善。'},
+'南京B店':{title:'南京B店 — 漏斗各阶段',headers:["阶段", "转化率", "目标", "状态"],rows:[["线索→到店", "41%", "40%", "green"], ["到店→试驾", "66%", "65%", "green"], ["试驾→报价", "76%", "75%", "green"], ["报价→成交", "56%", "55%", "green"], ["全链路", "11.5%", "8.0%", "green"]],insight:'南京B店全链路表现优异。'},
+'无锡A店':{title:'无锡A店 — 漏斗各阶段',headers:["阶段", "转化率", "目标", "状态"],rows:[["线索→到店", "41%", "40%", "green"], ["到店→试驾", "66%", "65%", "green"], ["试驾→报价", "76%", "75%", "green"], ["报价→成交", "56%", "55%", "green"], ["全链路", "11.5%", "8.0%", "green"]],insight:'无锡A店全链路表现优异。'},
+'常州A店':{title:'常州A店 — 漏斗各阶段',headers:["阶段", "转化率", "目标", "状态"],rows:[["线索→到店", "41%", "40%", "green"], ["到店→试驾", "66%", "65%", "green"], ["试驾→报价", "76%", "75%", "green"], ["报价→成交", "56%", "55%", "green"], ["全链路", "11.5%", "8.0%", "green"]],insight:'常州A店全链路表现优异。'},
+'徐州A店':{title:'徐州A店 — 漏斗各阶段',headers:["阶段", "转化率", "目标", "状态"],rows:[["线索→到店", "41%", "40%", "green"], ["到店→试驾", "66%", "65%", "green"], ["试驾→报价", "76%", "75%", "green"], ["报价→成交", "56%", "55%", "green"], ["全链路", "11.5%", "8.0%", "green"]],insight:'徐州A店全链路表现优异。'},
+},
+turnover:{
+'销售顾问':{title:'销售顾问 — 各城市流失率',headers:['城市','流失率','目标','状态'],rows:[['南京','14.7%','15%','yellow'],['上海','18.9%','15%','red'],['广州','21.9%','15%','red'],['深圳','12.6%','15%','green'],['北京','13.0%','15%','green'],['杭州','12.5%','15%','green'],['苏州','17.8%','15%','yellow'],['合肥','11.8%','15%','green'],['东莞','23.1%','15%','red'],['佛山','12.8%','15%','green'],['天津','23.5%','15%','red'],['石家庄','20.1%','15%','red'],['太原','13.6%','15%','green'],['成都','23.1%','15%','red'],['重庆','13.5%','15%','green'],['西安','19.6%','15%','red']],insight:'销售顾问在全国范围内部分城市超标。'},
+'服务顾问':{title:'服务顾问 — 各城市流失率',headers:['城市','流失率','目标','状态'],rows:[['南京','13.8%','12%','yellow'],['上海','17.3%','12%','red'],['广州','19.1%','12%','red'],['深圳','11.9%','12%','yellow'],['北京','8.6%','12%','green'],['杭州','16.3%','12%','red'],['苏州','14.5%','12%','yellow'],['合肥','17.9%','12%','red'],['东莞','14.0%','12%','yellow'],['佛山','9.8%','12%','green'],['天津','12.7%','12%','yellow'],['石家庄','14.0%','12%','yellow'],['太原','9.9%','12%','green'],['成都','16.8%','12%','red'],['重庆','16.7%','12%','red'],['西安','17.1%','12%','red']],insight:'服务顾问在全国范围内部分城市超标。'},
+'销售经理':{title:'销售经理 — 各城市流失率',headers:['城市','流失率','目标','状态'],rows:[['南京','7.1%','10%','green'],['上海','12.3%','10%','yellow'],['广州','10.9%','10%','yellow'],['深圳','9.8%','10%','yellow'],['北京','10.2%','10%','yellow'],['杭州','11.7%','10%','yellow'],['苏州','13.8%','10%','red'],['合肥','13.9%','10%','red'],['东莞','10.1%','10%','yellow'],['佛山','13.7%','10%','red'],['天津','14.8%','10%','red'],['石家庄','13.8%','10%','red'],['太原','10.8%','10%','yellow'],['成都','6.7%','10%','green'],['重庆','13.2%','10%','red'],['西安','7.0%','10%','green']],insight:'销售经理在全国范围内部分城市超标。'},
+'市场经理':{title:'市场经理 — 各城市流失率',headers:['城市','流失率','目标','状态'],rows:[['南京','15%','10%','red'],['上海','10%','10%','green'],['广州','12%','10%','yellow'],['深圳','11%','10%','yellow'],['北京','9%','10%','green'],['合肥','7%','10%','green']],insight:'南京失控，其他城市相对可控。'},
+'南京':{title:'南京 — 各岗位流失率',headers:['岗位','流失率','目标','状态'],rows:[['销售顾问','28%','15%','red'],['服务顾问','22%','12%','red'],['销售经理','18%','10%','red'],['市场经理','15%','10%','red']],insight:'全员超标，需从薪酬与职业发展入手。'},
+
+'杭州':{title:'杭州 — 各岗位流失率',headers:["岗位", "流失率", "目标", "状态"],rows:[["销售顾问", "14.2%", "15%", "green"], ["服务顾问", "14.0%", "12%", "yellow"], ["销售经理", "11.5%", "10%", "yellow"], ["市场经理", "9.8%", "10%", "green"]],insight:'杭州需系统性改善。'},
+'苏州':{title:'苏州 — 各岗位流失率',headers:["岗位", "流失率", "目标", "状态"],rows:[["销售顾问", "15.2%", "15%", "yellow"], ["服务顾问", "11.6%", "12%", "green"], ["销售经理", "9.2%", "10%", "green"], ["市场经理", "10.4%", "10%", "yellow"]],insight:'苏州需系统性改善。'},
+'合肥':{title:'合肥 — 各岗位流失率',headers:["岗位", "流失率", "目标", "状态"],rows:[["销售顾问", "12.7%", "15%", "green"], ["服务顾问", "9.5%", "12%", "green"], ["销售经理", "8.8%", "10%", "green"], ["市场经理", "9.3%", "10%", "green"]],insight:'合肥各岗位均在可控范围内。'},
+'深圳':{title:'深圳 — 各岗位流失率',headers:["岗位", "流失率", "目标", "状态"],rows:[["销售顾问", "14.8%", "15%", "green"], ["服务顾问", "11.5%", "12%", "green"], ["销售经理", "11.8%", "10%", "yellow"], ["市场经理", "10.5%", "10%", "yellow"]],insight:'深圳需系统性改善。'},
+'东莞':{title:'东莞 — 各岗位流失率',headers:["岗位", "流失率", "目标", "状态"],rows:[["销售顾问", "17.7%", "15%", "yellow"], ["服务顾问", "13.2%", "12%", "yellow"], ["销售经理", "9.7%", "10%", "green"], ["市场经理", "9.7%", "10%", "green"]],insight:'东莞需系统性改善。'},
+'佛山':{title:'佛山 — 各岗位流失率',headers:["岗位", "流失率", "目标", "状态"],rows:[["销售顾问", "16.3%", "15%", "yellow"], ["服务顾问", "12.0%", "12%", "green"], ["销售经理", "11.1%", "10%", "yellow"], ["市场经理", "11.3%", "10%", "yellow"]],insight:'佛山需系统性改善。'},
+'北京':{title:'北京 — 各岗位流失率',headers:["岗位", "流失率", "目标", "状态"],rows:[["销售顾问", "13.5%", "15%", "green"], ["服务顾问", "13.8%", "12%", "yellow"], ["销售经理", "10.2%", "10%", "yellow"], ["市场经理", "10.4%", "10%", "yellow"]],insight:'北京需系统性改善。'},
+'天津':{title:'天津 — 各岗位流失率',headers:["岗位", "流失率", "目标", "状态"],rows:[["销售顾问", "13.8%", "15%", "green"], ["服务顾问", "13.4%", "12%", "yellow"], ["销售经理", "9.4%", "10%", "green"], ["市场经理", "10.6%", "10%", "yellow"]],insight:'天津需系统性改善。'},
+'石家庄':{title:'石家庄 — 各岗位流失率',headers:["岗位", "流失率", "目标", "状态"],rows:[["销售顾问", "21.7%", "15%", "red"], ["服务顾问", "16.0%", "12%", "red"], ["销售经理", "13.8%", "10%", "red"], ["市场经理", "14.6%", "10%", "red"]],insight:'石家庄需系统性改善。'},
+'太原':{title:'太原 — 各岗位流失率',headers:["岗位", "流失率", "目标", "状态"],rows:[["销售顾问", "15.6%", "15%", "yellow"], ["服务顾问", "11.6%", "12%", "green"], ["销售经理", "9.8%", "10%", "green"], ["市场经理", "10.5%", "10%", "yellow"]],insight:'太原需系统性改善。'},
+'成都':{title:'成都 — 各岗位流失率',headers:["岗位", "流失率", "目标", "状态"],rows:[["销售顾问", "11.5%", "15%", "green"], ["服务顾问", "10.6%", "12%", "green"], ["销售经理", "8.3%", "10%", "green"], ["市场经理", "9.3%", "10%", "green"]],insight:'成都各岗位均在可控范围内。'},
+'重庆':{title:'重庆 — 各岗位流失率',headers:["岗位", "流失率", "目标", "状态"],rows:[["销售顾问", "14.1%", "15%", "green"], ["服务顾问", "10.9%", "12%", "green"], ["销售经理", "7.5%", "10%", "green"], ["市场经理", "7.3%", "10%", "green"]],insight:'重庆各岗位均在可控范围内。'},
+'西安':{title:'西安 — 各岗位流失率',headers:["岗位", "流失率", "目标", "状态"],rows:[["销售顾问", "15.6%", "15%", "yellow"], ["服务顾问", "12.2%", "12%", "yellow"], ["销售经理", "11.2%", "10%", "yellow"], ["市场经理", "11.9%", "10%", "yellow"]],insight:'西安需系统性改善。'},
+},
+};
+function secondaryDrilldown(type,key,label){
+  const data=secondaryDrillData[type];
+  if(!data||!data[key]){
+    const panel=document.getElementById('drilldownPanel');
+    panel.innerHTML=`<div class="panel-header"><span class="panel-title">${label} — 三级明细</span><button class="panel-close" onclick="backToPrimaryDrilldown()">← 返回上级</button></div><div style="padding:40px;color:var(--text-muted);text-align:center;">该维度暂无更细粒度数据，请返回上级查看。</div>`;
+    return;
+  }
+  const d=data[key];
+  const panel=document.getElementById('drilldownPanel');
+  const headers=d.headers.map(h=>`<th>${h}</th>`).join('');
+  const rows=d.rows.map(r=>'<tr>'+r.map((cell,i)=>{
+    const st=['red','yellow','green'].includes(cell)?cell:null;
+    if(st&&(i===r.length-1||i===4))return `<td><span class="status-pill ${st}">${st==='red'?'预警':st==='yellow'?'关注':'达标'}</span></td>`;
+    if(st)return `<td style="font-weight:600;color:var(--${st})">${cell}</td>`;
+    return `<td>${cell}</td>`;
+  }).join('')+'</tr>').join('');
+  panel.innerHTML=`<div class="panel-header"><span class="panel-title">${d.title}</span><button class="panel-close" onclick="backToPrimaryDrilldown()">← 返回上级</button></div><table class="data-table"><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table>${d.insight?insightBox(d.insight,'warn'):''}`;
+}
+function backToPrimaryDrilldown(){
+  if(primaryDrillContext){
+    openDrilldown(primaryDrillContext.type,primaryDrillContext.name);
+  }else{
+    closeDrilldown();
+  }
+}
+
+// ==================== VEHICLE & DEALER ====================
+function renderVehiclePage(type,region){const v=vehicleData[type];if(!v)return;const e=vehicleExtraData[type];const es=e&&e.summary?e.summary:{};
+
+// Extract cities from dealer names
+const allCities=[...new Set(v.detail.map(d=>d.dealer.replace(/[A-D]店$/,'')))].sort();
+const activeRegion=region||'全部';
+const filteredDetail=activeRegion==='全部'?v.detail:v.detail.filter(d=>d.dealer.startsWith(activeRegion));
+
+// Recalculate summary from filtered detail
+const fStores=filteredDetail.length;
+const fStock=filteredDetail.reduce((s,d)=>s+d.stock,0);
+const fRetail=filteredDetail.reduce((s,d)=>s+d.retail,0);
+const fOver90=filteredDetail.reduce((s,d)=>s+d.over90,0);
+const fOrders=filteredDetail.reduce((s,d)=>s+d.order,0);
+const fTargets=filteredDetail.reduce((s,d)=>s+d.target,0);
+const fDepth=fRetail>0?Math.round(fStock/fRetail*10)/10:v.avgDepth;
+const fHighStores=filteredDetail.filter(d=>d.highStock).length;
+
+// Determine overall status
+let overallStatus=fDepth>2?'red':(fDepth>1.5?'yellow':'green');
+if(fHighStores>2)overallStatus='red';
+else if(fHighStores>1&&overallStatus==='green')overallStatus='yellow';
+const statusText=overallStatus==='red'?'预警':(overallStatus==='yellow'?'关注':'达标');
+const dColor=fDepth>1.5?'red':(fDepth>1.3?'yellow':'green');
+
+// Unit profit color
+const upVal=es.unitProfit||'—';
+const upColor=upVal!=='—'&&parseFloat(upVal)<1.5?'red':(upVal!=='—'&&parseFloat(upVal)<1.8?'yellow':'green');
+
+// Rates from extra data summary
+const tdr=parseFloat(es.testDriveRate)||0;
+const tdrColor=tdr<40?'red':(tdr<55?'yellow':'green');
+const fin=parseFloat(es.finRate)||0;
+const finColor=fin<30?'red':(fin<45?'yellow':'green');
+const ins=parseFloat(es.insRate)||0;
+const insColor=ins<40?'red':(ins<55?'yellow':'green');
+
+// Status icons
+const sIcons={red:'&#128308;',yellow:'&#128993;',green:'&#128994;'};
+const sIcon=sIcons[overallStatus];
+
+// Region filter tabs
+const regionTabs=allCities.map(c=>{
+  const count=v.detail.filter(d=>d.dealer.startsWith(c)).length;
+  return`<span class="rf-tab${activeRegion===c?' active':''}" onclick="renderVehiclePage('${type}','${c}')">${c.replace('片区','')}<span class="rf-badge">${count}</span></span>`;
+}).join('');
+
+// Metric cards
+const maxStock=250;
+const metrics=[
+  {icon:'&#127970;',cls:'blue',val:fStores,lbl:'经销门店数'},
+  {icon:'&#128230;',cls:'yellow',val:fStock,lbl:'总库存（台）',bar:Math.min(100,Math.round(fStock/maxStock*100)),barColor:dColor},
+  {icon:'&#128722;',cls:'green',val:fRetail,lbl:'近30日零售（台）'},
+  {icon:'&#9201;',cls:dColor,val:fDepth,lbl:'平均库存深度（月）',valClass:dColor},
+  {icon:'&#9888;&#65039;',cls:'red',val:fOver90,lbl:'超90天库存（台）',valClass:'red'},
+  {icon:'&#128176;',cls:upColor,val:es.unitProfit||'—',lbl:'单车综合收益',valClass:upColor},
+  {icon:'&#128664;',cls:tdrColor,val:es.testDriveRate||'—',lbl:'试驾率',bar:tdr,barColor:tdrColor},
+  {icon:'&#127974;',cls:finColor,val:es.finRate||'—',lbl:'金融渗透率',bar:fin,barColor:finColor},
+  {icon:'&#128737;',cls:insColor,val:es.insRate||'—',lbl:'保险渗透率',bar:ins,barColor:insColor}
+];
+
+const mcHTML=metrics.map(m=>{
+  const barHTML=(m.bar!==undefined)?`<div class="mc-bar"><div class="mc-bar-fill ${m.barColor}" style="width:${m.bar}%"></div></div>`:'';
+  return`<div class="metric-card"><div class="mc-icon ${m.cls}">${m.icon}</div><div class="mc-body"><div class="mc-val${m.valClass?' '+m.valClass:''}">${m.val}</div><div class="mc-lbl">${m.lbl}</div>${barHTML}</div></div>`;
+}).join('');
+
+// Dealer cards
+const dCards=filteredDetail.map(d=>{
+  const de=e&&e.dealers?e.dealers[d.dealer]:null;
+  const up=de?de.unitProfit:'—';
+  const upC=up!=='—'&&parseFloat(up)<1.5?'red':(up!=='—'&&parseFloat(up)<1.8?'yellow':'green');
+  const td=de?de.testDriveRate:'—';
+  const fr=de?de.finRate:'—';
+  const ordHit=d.target>0?Math.round(d.order/d.target*100):0;
+  const ohColor=ordHit<70?'red':(ordHit<90?'yellow':'green');
+  const ddColor=d.depth>1.5?'red':(d.depth>1.3?'yellow':'green');
+
+  return`<div class="veh-dealer-card">
+    <div class="vdc-top">
+      <div><div class="vdc-name">${d.dealer}</div><div class="vdc-city">${d.dealer.replace(/店$/,'')}</div></div>
+      <span class="status-pill ${d.highStock?'red':'green'}">${d.highStock?'高库存':'正常'}</span>
+    </div>
+    <div class="vdc-body">
+      <div class="vdc-stat"><div class="vdc-sval">${d.stock}<span style="font-size:10px;color:var(--text-muted);font-weight:400"> 台</span></div><div class="vdc-slbl">库存台数</div></div>
+      <div class="vdc-stat"><div class="vdc-sval">${d.retail}<span style="font-size:10px;color:var(--text-muted);font-weight:400"> 台</span></div><div class="vdc-slbl">近30日零售</div></div>
+      <div class="vdc-stat"><div class="vdc-sval ${ddColor}">${d.depth}<span style="font-size:10px;color:var(--text-muted);font-weight:400"> 月</span></div><div class="vdc-slbl">库存深度</div></div>
+      <div class="vdc-stat"><div class="vdc-sval" style="color:${d.over90>2?'var(--red)':'var(--text-primary)'}">${d.over90}<span style="font-size:10px;color:var(--text-muted);font-weight:400"> 台</span></div><div class="vdc-slbl">超90天库存</div></div>
+      <div class="vdc-stat"><div class="vdc-sval ${upC}">${up}<span style="font-size:10px;color:var(--text-muted);font-weight:400"> 万</span></div><div class="vdc-slbl">单车收益</div></div>
+      <div class="vdc-stat"><div class="vdc-sval">${td}</div><div class="vdc-slbl">试驾率</div></div>
+      <div class="vdc-stat"><div class="vdc-sval">${d.order}<span style="font-size:10px;color:var(--text-muted);font-weight:400"> / ${d.target}</span></div><div class="vdc-slbl">实际订单 / 目标</div></div>
+      <div class="vdc-stat"><div class="vdc-sval">${fr}</div><div class="vdc-slbl">金融渗透率</div></div>
+    </div>
+    <div class="vdc-footer">
+      <span>订单达成</span><div class="vdc-bar"><div class="vdc-bar-fill ${ohColor}" style="width:${Math.min(100,ordHit)}%"></div></div><span class="vdc-pct" style="color:var(--${ohColor==='red'?'red':ohColor==='yellow'?'yellow':'green'})">${ordHit}%</span>
+    </div>
+  </div>`;
+}).join('');
+
+document.getElementById('page-vehicle-'+type).innerHTML=`
+  <div class="vehicle-hero">
+    <div class="vh-left">
+      <div class="vh-icon">${sIcon}</div>
+      <div><div class="vh-name">${type} 型</div><div class="vh-type">VEHICLE MODEL · ${v.stores} DEALERS</div></div>
+    </div>
+    <div class="vh-right">
+      <div class="vh-vital"><div class="vv-val">${fStock}台</div><div class="vv-lbl">总库存</div></div>
+      <div class="vh-vital"><div class="vv-val">${fRetail}台</div><div class="vv-lbl">30天零售</div></div>
+      <div class="vh-status ${overallStatus}"><span>&#9679;</span>${statusText}</div>
+    </div>
+  </div>
+  <div class="metric-grid">${mcHTML}</div>
+  <div class="region-filter"><span class="rf-label">&#127758; 片区筛选</span><span class="rf-tab${activeRegion==='全部'?' active':''}" onclick="renderVehiclePage('${type}','全部')">全部<span class="rf-badge">${v.detail.length}</span></span>${regionTabs}</div>
+  <div class="veh-section-header"><span class="vsh-title">经销商明细</span><span class="vsh-count">${activeRegion==='全部'?'共 '+fStores+' 家门店':activeRegion+' · '+fStores+' 家门店'}</span></div>
+  <div class="veh-dealer-grid">${dCards}</div>
+  <div class="back-link" onclick="switchPage('dashboard')">← 返回大区总驾驶舱</div>`;}function renderDealerPage(dealerId){const d=dealerList.find(x=>x.id===dealerId);if(!d)return;const kpi=dealerKPIData[d.name];const page=document.getElementById('page-dealer-generic');let kpiRows='';if(kpi&&Object.keys(kpi).filter(k=>!['anomaly','status','targets'].includes(k)).length>0){const fields=[{key:'salesRate',label:'销量目标达标率'},{key:'lossRate',label:'亏损经销商占比'},{key:'npsRate',label:'低NPS经销商占比'},{key:'convRate',label:'成交转化率达标占比'},{key:'finRate',label:'金融渗透率'},{key:'insRate',label:'保险渗透率'},{key:'unitProfit',label:'零售单车收益贡献'},{key:'expNPS',label:'销售体验NPS'},{key:'testDrive',label:'到店试驾率'}];kpiRows=fields.map(f=>{const val=kpi[f.key];if(val==='—')return'';const target=(kpi.targets||{})[f.key]||'';let st='green';if(f.key==='lossRate'||f.key==='npsRate'){st=parseFloat(val)>10?'red':'green';}else if(f.key==='salesRate'){st=parseFloat(val)<80?'red':(parseFloat(val)<90?'yellow':'green');}else if(f.key==='unitProfit'){st='yellow';}else if(f.key==='expNPS'){st=parseFloat(val)<70?'red':'green';}return`<tr><td>${f.label}</td><td style="font-weight:600;color:var(--${st})">${val}</td><td>${target}</td><td><span class="status-pill ${st}">${st==='red'?'预警':(st==='yellow'?'关注':'达标')}</span></td></tr>`;}).filter(r=>r).join('');}page.innerHTML=`<div class="summary-bar"><div class="summary-item"><div class="count red">${d.anomalyCount}</div><div class="label">异常指标数</div></div><div class="summary-item"><div class="count" style="color:var(--accent)">${d.vehicles.split(', ').length}</div><div class="label">经营车型</div></div><div class="summary-item"><div class="count ${d.highStockCount>0?'red':'green'}">${d.highStockCount}</div><div class="label">高库存车型</div></div><div class="summary-item"><div class="label" style="font-size:13px;">${d.city} · ${d.name}</div></div></div><div class="section-title">核心KPI指标</div><table class="data-table"><thead><tr><th>指标</th><th>当前值</th><th>目标值</th><th>状态</th></tr></thead><tbody>${kpiRows||'<tr><td colspan="4" style="text-align:center;color:var(--text-muted);padding:20px;">该经销商暂无详细KPI数据</td></tr>'}</tbody></table><div class="back-link" onclick="switchPage('dealer')">← 返回经销商片区总览</div>`;}
+
+function renderDealerDashboard(){const regions=[...new Set(dealerList.map(d=>d.city))];const regionData=regions.map(r=>{const dealers=dealerList.filter(d=>d.city===r);const totalAnomaly=dealers.reduce((s,d)=>s+d.anomalyCount,0);const hasRed=dealers.some(d=>d.status==='red');const hasYellow=dealers.some(d=>d.status==='yellow');const overallStatus=hasRed?'red':(hasYellow?'yellow':'green');const redCount=dealers.filter(d=>d.status==='red').length;const greenCount=dealers.filter(d=>d.status==='green').length;return{r,dealers,totalAnomaly,overallStatus,redCount,greenCount};});const statusLabel=s=>s==='red'?'预警':(s==='yellow'?'关注':'健康');document.getElementById('page-dealer-dashboard').innerHTML=`<div class="section-title">经销商片区总览 <span style="background:#ff6b6b;color:white;font-size:10px;padding:2px 8px;border-radius:4px;margin-left:8px;">V1.5</span></div><div class="region-card-grid">${regionData.map(rd=>`<div class="region-card" onclick="switchDealerRegion('${rd.r}')"><div class="rc-top"><span class="rc-name">${rd.r}片区</span><span class="rc-status ${rd.overallStatus}">${statusLabel(rd.overallStatus)}</span></div><div class="rc-stats"><div class="rc-stat"><div class="rcs-val green">${rd.dealers.length}</div><div class="rcs-lbl">经销商数</div></div><div class="rc-stat"><div class="rcs-val red">${rd.totalAnomaly}</div><div class="rcs-lbl">异常项</div></div><div class="rc-stat"><div class="rcs-val ${rd.redCount>0?'red':'green'}">${rd.greenCount}</div><div class="rcs-lbl">健康店</div></div></div><div class="rc-dealers">${rd.dealers.map(d=>`<span class="rc-dealer-tag ${d.status}">${d.name} ${d.anomalyCount}异常</span>`).join('')}</div></div>`).join('')}</div>`;updateSidebarActive('dealer');}
+
+function renderDealerRegion(region){const dealers=dealerList.filter(d=>d.city===region);const totalAnomaly=dealers.reduce((s,d)=>s+d.anomalyCount,0);const redCount=dealers.filter(d=>d.status==='red').length;const yellowCount=dealers.filter(d=>d.status==='yellow').length;const greenCount=dealers.filter(d=>d.status==='green').length;const hasRed=redCount>0;const hasYellow=yellowCount>0;const overallStatus=hasRed?'red':(hasYellow?'yellow':'green');const sl2=s=>s==='red'?'预警':(s==='yellow'?'关注':'健康');const heroBg=overallStatus==='red'?'danger':(overallStatus==='yellow'?'warn':'');const avg=(arr,key,t)=>{let n=0,s=0;arr.forEach(d=>{const kpi=dealerKPIData[d.name];if(!kpi)return;const v=kpi[key];if(v===undefined||v==='—')return;const pv=parseFloat(v.replace(/[^0-9.]/g,''));if(isNaN(pv))return;s+=pv;n++;});if(n===0)return'—';const r=s/n;return t==='pct'?r.toFixed(1)+'%':t==='money'?'¥'+Math.round(r).toLocaleString():r.toFixed(1);};const rSalesRate=avg(dealers,'salesRate','pct');const rLossRate=avg(dealers,'lossRate','pct');const rNpsRate=avg(dealers,'npsRate','pct');const rConvRate=avg(dealers,'convRate','pct');const rFinRate=avg(dealers,'finRate','pct');const rInsRate=avg(dealers,'insRate','pct');const rUnitProfit=avg(dealers,'unitProfit','money');const rExpNPS=avg(dealers,'expNPS','float');const rTestDrive=avg(dealers,'testDrive','pct');const targets={salesRate:'≥80%',lossRate:'≤10%',npsRate:'≤10%',convRate:'≥90%',finRate:'≥90%',insRate:'≥90%',unitProfit:'≥¥8,000',expNPS:'≥70',testDrive:'≥65%'};const jStatus=(key,val)=>{if(val==='—')return'';const n=parseFloat(val);if(key==='lossRate'||key==='npsRate')return n>10?'red':'green';if(key==='salesRate')return n<80?'red':(n<90?'yellow':'green');if(key==='convRate')return n<85?'red':(n<90?'yellow':'green');if(key==='expNPS')return n<70?'red':'green';if(key==='unitProfit')return n<8000?'red':(n<9000?'yellow':'green');return n<parseFloat(targets[key])?'yellow':'green';};const kpiCard=(label,val,target,icon,iconCls)=>{const st=jStatus(Object.keys(targets).find(k=>targets[k]===target)||'',val);const cls=st||'green';return`<div class="rg-kpi-card"><div class="rgk-icon ${iconCls||'blue'}">${icon||'&#128202;'}</div><div class="rgk-body"><div class="rgk-label">${label}</div><div class="rgk-values"><span class="rgk-val${st?' '+st:''}">${val}</span><span class="rgk-target">目标 ${target}</span></div><div class="rgk-bar"><div class="rgk-fill ${st||'green'}" style="width:${val==='—'?0:Math.min(100,parseFloat(val)*1.1)}%"></div></div></div><span class="status-pill ${st||'green'}">${st==='red'?'预警':(st==='yellow'?'关注':'达标')}</span></div>`;};const kpiCards=[kpiCard('销量达标率',rSalesRate,targets.salesRate,'&#128200;','blue'),kpiCard('亏损经销商占比',rLossRate,targets.lossRate,'&#128184;','yellow'),kpiCard('低NPS占比',rNpsRate,targets.npsRate,'&#128172;','yellow'),kpiCard('转化率达标',rConvRate,targets.convRate,'&#128640;','blue'),kpiCard('金融渗透率',rFinRate,targets.finRate,'&#127974;','blue'),kpiCard('保险渗透率',rInsRate,targets.insRate,'&#128737;','blue'),kpiCard('单车收益',rUnitProfit,targets.unitProfit,'&#128176;','green'),kpiCard('体验NPS',rExpNPS,targets.expNPS,'&#11088;','green'),kpiCard('试驾率',rTestDrive,targets.testDrive,'&#128663;','blue')].join('');const dealerTags=dealers.map(d=>`<span class="rc-dealer-tag ${d.status}" onclick="event.stopPropagation();switchDealerPage('${d.id}')" style="cursor:pointer">${d.name} ${d.anomalyCount}项异常</span>`).join('');document.getElementById('page-dealer-region').innerHTML=`<div class="region-hero${heroBg?' '+heroBg:''}"><div class="rh-left"><div class="rh-icon">&#127970;</div><div><div class="rh-name">${region}片区</div><div class="rh-meta"><span>${dealers.length}家经销商</span><span>${totalAnomaly}项异常指标</span><span>${redCount}家预警 · ${greenCount}家健康</span></div></div></div><div class="rh-right"><div class="rh-stat"><div class="rhs-val red">${totalAnomaly}</div><div class="rhs-lbl">异常项总数</div></div><div class="rh-stat"><div class="rhs-val${redCount>0?' red':' green'}">${greenCount}/${dealers.length}</div><div class="rhs-lbl">健康店占比</div></div><div class="rh-status ${overallStatus}"><span>&#9679;</span>${sl2(overallStatus)}</div></div></div><div class="rh-metric-row"><div class="rh-metric-card"><div class="rmc-icon red">&#9888;</div><div class="rmc-body"><div class="rmc-val red">${redCount}家</div><div class="rmc-lbl">预警门店</div></div></div><div class="rh-metric-card"><div class="rmc-icon yellow">&#9881;</div><div class="rmc-body"><div class="rmc-val yellow">${yellowCount}家</div><div class="rmc-lbl">关注门店</div></div></div><div class="rh-metric-card"><div class="rmc-icon green">&#10003;</div><div class="rmc-body"><div class="rmc-val green">${greenCount}家</div><div class="rmc-lbl">健康门店</div></div></div><div class="rh-metric-card"><div class="rmc-icon blue">&#128221;</div><div class="rmc-body"><div class="rmc-val">${totalAnomaly}项</div><div class="rmc-lbl">异常指标合计</div></div></div></div><div class="section-title">片区整体KPI — 基于${dealers.length}家门店均值</div><div class="rg-kpi-grid">${kpiCards}</div><div class="ds-toggle" onclick="this.classList.toggle('open');this.querySelector('.ds-arrow').classList.toggle('open');const body=this.nextElementSibling;body.style.maxHeight=this.classList.contains('open')?body.scrollHeight+'px':'0px'"><span class="ds-arrow">&#9654;</span>${region}片区 · 经销商明细（${dealers.length}家）</div><div class="ds-body"><div class="rc-dealers-wrap">${dealerTags}</div></div><div class="back-link" onclick="switchPage('dealer')">← 返回经销商片区总览</div>`;updateSidebarActive('dealer',region);}
+
+function renderRolePage(role){const data=roleKPIs[role];if(!data)return;const all=data.all,reds=all.filter(k=>k.status==='red'),yellows=all.filter(k=>k.status==='yellow'),greens=all.filter(k=>k.status==='green'),abnormal=[...reds,...yellows];document.getElementById('page-role').innerHTML=`<div class="summary-bar"><div class="summary-item"><div class="count red">${reds.length}</div><div class="label">预警</div></div><div class="summary-item"><div class="count yellow">${yellows.length}</div><div class="label">关注</div></div><div class="summary-item"><div class="count green">${greens.length}</div><div class="label">达标</div></div><div class="summary-item"><div class="count" style="color:var(--accent)">${all.length}</div><div class="label">KPI总数</div></div></div><div class="section-title"><span class="dot-icon red"></span>二级KPI总览（${all.length}项）</div><div class="kpi-grid">${all.map((k,i)=>`<div class="kpi-card" data-task="${k.task||''}" style="cursor:pointer;" onclick="openRoleDrilldown('${role}',${i})"><div class="status-bar ${k.status}"></div><div class="kpi-header"><span class="kpi-name">${k.name}</span><span class="kpi-badge ${k.status}">${sl(k.status)}</span></div><div class="kpi-values"><span class="kpi-current ${k.status}">${k.value}</span><span class="kpi-target">目标: ${k.target}</span></div><div class="kpi-footer">${k.task?`<span class="kpi-role">点击查看详情 →</span>`:'<span style="color:var(--green)">持续观察</span>'}</div></div>`).join('')}</div><div class="section-title" style="margin-top:20px;"><span class="dot-icon red"></span>异常分析区</div><table class="data-table"><thead><tr><th>二级KPI</th><th>当前值</th><th>目标</th><th>状态</th><th>异常说明</th><th>建议动作</th><th>检核任务</th></tr></thead><tbody>${abnormal.map(k=>`<tr><td>${k.name}</td><td style="font-weight:600;color:var(--${k.status})">${k.value}</td><td>${k.target}</td><td><span class="status-pill ${k.status}">${sl(k.status)}</span></td><td>${k.desc}</td><td>${k.action}</td><td>${k.task?`<span class="task-link" onclick="jumpToTask('${k.task}')">${k.task} →</span>`:'-'}</td></tr>`).join('')}</tbody></table><div class="section-title" style="margin-top:16px;"><span class="dot-icon green"></span>达标区（稳定观察）</div><table class="data-table"><thead><tr><th>二级KPI</th><th>当前值</th><th>目标</th><th>状态</th><th>持续观察</th></tr></thead><tbody>${greens.map(k=>`<tr><td>${k.name}</td><td style="font-weight:600;color:var(--green)">${k.value}</td><td>${k.target}</td><td><span class="status-pill green">达标</span></td><td>持续观察，保持当前水平</td></tr>`).join('')}</tbody></table><div class="back-link" onclick="${currentRole?"switchPage('tasks')":"switchPage('dashboard')"}">${currentRole?'← 返回检核任务':'← 返回大区总驾驶舱'}</div>`;}
+
+let taskFilters={priority:'all',status:'all',role:'all'};
+function renderTasks(filter){
+  if(typeof filter==='string')taskFilters={priority:filter==='all'?'all':filter,status:'all',role:'all'};
+  else if(filter)taskFilters={...taskFilters,...filter};
+  const f=taskFilters;let tasks=taskData;
+  if(f.priority!=='all')tasks=tasks.filter(t=>t.priority===f.priority);
+  if(f.status!=='all')tasks=tasks.filter(t=>t.status===f.status);
+  if(f.role!=='all')tasks=tasks.filter(t=>t.role===f.role);if(currentRole)tasks=tasks.filter(t=>t.role===currentRole);
+    const statuses=['未开始','进行中','已验证','已关闭','已取消'],roles=['大区总','大区副总','市场经理','新媒体经理','零售经理','培训经理','渠道交付经理','运营支持'];
+  const filterBar=`<div class="task-filter-bar"><div class="filter-row"><span class="filter-label">状态：</span><button class="task-chip${f.status==='all'?' active':''}" onclick="setTaskFilter('status','all')">全部</button>${statuses.map(s=>`<button class="task-chip${f.status===s?' active':''}" onclick="setTaskFilter('status','${s}')">${s}</button>`).join('')}</div><div class="filter-row"><span class="filter-label">责任人：</span><button class="task-chip${f.role==='all'?' active':''}" onclick="setTaskFilter('role','all')">全部</button>${roles.map(r=>`<button class="task-chip${f.role===r?' active':''}" onclick="setTaskFilter('role','${r}')">${r}</button>`).join('')}</div><div class="filter-summary">共 ${tasks.length} 条任务</div></div>`;
+  document.getElementById('page-tasks').innerHTML=filterBar+`<div class="task-list">${tasks.map(t=>`<div class="task-item" onclick="handleTaskClick('${t.id}')"><span class="task-id ${t.priority.toLowerCase()}">${t.id}</span><div class="task-info"><div class="task-name">${t.name}</div><div class="task-meta">关联KPI: ${t.kpi} · 优先级: ${t.priority}</div></div><span class="task-role">${t.role}</span><span class="task-status s-${t.status}">${t.status}</span><button class="task-remind-btn" onclick="sendReminder(event,'${t.role}')">提醒</button></div>`).join('')}</div>${currentRole?`<div class="back-link" onclick="switchRolePage('${currentRole}')">← 返回岗位看板</div>`:`<div class="back-link" onclick="switchPage('dashboard')">← 返回大区总驾驶舱</div>`}`;
+}
+function setTaskFilter(key,value){taskFilters[key]=value;renderTasks();}
+function sendReminder(e,role){e.stopPropagation();showToast('提醒已发送至 '+role);}
+function showToast(msg){let t=document.getElementById('toast');if(!t){t=document.createElement('div');t.id='toast';t.className='toast';document.body.appendChild(t);}t.textContent=msg;t.classList.add('show');clearTimeout(t._tid);t._tid=setTimeout(()=>t.classList.remove('show'),2000);}
+
+function filterTasks(filter,btn){renderTasks(filter);if(filter==='all')updateSidebarActive('tasks');else updateSidebarActive('tasks-'+filter);}
+function jumpToTask(taskId){const t=taskData.find(t=>t.id===taskId);if(currentRole){if(t&&t.id.startsWith('P')){showToast('一级KPI检核任务仅大区总可查看下钻明细');return;}if(t&&t.role!==currentRole){showToast('该任务不属于当前岗位，无法查看');return;}}switchPage('tasks');renderTasks('all');setTimeout(()=>{document.querySelectorAll('.task-item').forEach(item=>{if(item.querySelector('.task-id').textContent===taskId){item.scrollIntoView({behavior:'smooth',block:'center'});item.style.borderColor='var(--accent)';setTimeout(()=>item.style.borderColor='',2000);}});},400);}
+function handleTaskClick(taskId){const t=taskData.find(t=>t.id===taskId);if(!t)return;if(currentRole){if(t.id.startsWith('P')){showToast('一级KPI检核任务仅大区总可查看下钻明细');return;}if(t.role!==currentRole){showToast('该任务不属于当前岗位，无法查看');return;}}if(t.id.startsWith('P')){const dmap={P01:'marketShare',P02:'salesRate',P03:'profitHealth',P04:'unitProfit',P05:'stockDepth',P06:'nps',P07:'conversion',P08:'turnover'};const dt=dmap[t.id]||t.drillType;switchPage('dashboard');setTimeout(()=>openDrilldown(dt,t.kpi),350);}else if(roleKPIs[t.role]){switchRolePage(t.role);setTimeout(()=>{const card=document.querySelector('#page-role .kpi-card[data-task="'+taskId+'"]');if(card){card.scrollIntoView({behavior:'smooth',block:'center'});card.style.boxShadow='0 0 0 3px var(--accent)';card.style.transform='scale(1.03)';card.style.transition='all .3s';setTimeout(()=>{card.style.boxShadow='';card.style.transform='';},2500);}},550);}}
+function openRoleDrilldown(role,index){const data=roleKPIs[role];if(!data)return;const k=data.all[index];if(!k)return;const sc=k.status==='red'?'var(--red)':k.status==='yellow'?'var(--yellow)':'var(--green)';const sl2=s=>s==='red'?'预警':s==='yellow'?'关注':'达标';const dd=getRoleDealerDetail(role,index);const ddSection=dd?`<div class="role-drilldown-card full"><h4>${dd.title}</h4><table class="data-table" style="margin-top:8px;"><thead><tr>${dd.headers.map(h=>`<th>${h}</th>`).join('')}</tr></thead><tbody>${dd.rows.map(r=>`<tr>${r.map((c,i)=>{const sl3=v=>v==='red'?'预警':v==='yellow'?'关注':'达标';const label=i===dd.statusCol?sl3(c):c;const style=i===dd.statusCol?` style="color:var(--${c});font-weight:600;"`:(i===dd.valCol?` style="font-weight:600;color:var(--${dd.getStatus?dd.getStatus(c):'text-primary'})"`:'');return`<td${style}>${label}</td>`;}).join('')}</tr>`).join('')}</tbody></table></div>`:'';document.getElementById('drilldownPanel').innerHTML=`<div class="role-drilldown-header"><span class="back-btn" onclick="closeDrilldown()">← 返回KPI总览</span><span class="drilldown-title">${k.name}</span></div><div class="role-drilldown-body"><div class="role-drilldown-card"><h4>当前值</h4><div class="big-value" style="color:${sc}">${k.value}</div><div class="meta-row"><span class="target-label">目标值：<b>${k.target}</b></span></div></div><div class="role-drilldown-card"><h4>状态评估</h4><div class="big-value" style="color:${sc}">${sl2(k.status)}</div><div class="meta-row"><span class="target-label">${k.desc||'数据正常，持续观察'}</span></div></div><div class="role-drilldown-card full"><h4>问题诊断</h4><div class="desc-text">${k.desc||'当前无异常说明，继续保持当前管理措施。'}</div></div><div class="role-drilldown-card full"><h4>建议动作</h4><div class="action-text">${k.action||'持续观察，保持当前水平'}</div>${k.task?`<button class="task-jump-btn" onclick="jumpToTask('${k.task}')"><span>检核任务 ${k.task}</span><span style="font-size:12px;opacity:0.8;">→</span></button>`:''}</div>${ddSection}</div>`;document.getElementById('drilldownOverlay').classList.add('open');}
+function getRoleDealerDetail(role,index){
+var G=function(v,tg,gy,rd){var n=parseFloat(v);if(isNaN(n))return rd||'red';return n>=gy?'green':n>=tg?'yellow':(rd||'red');};
+var S=function(v){var n=parseFloat(v);return isNaN(n)?v+' %':n>=100?' '+n+'%':n+'%';};
+var configs={
+'大区副总':{
+'0':{title:'经销商销量目标达标率明细（从低到高）',key:'salesRate',dir:'asc',fmt:S,target:'≥80%',headers:['经销商','销量达成率','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){var n=parseFloat(v);return n>=80?'green':n>=70?'yellow':'red';}},
+'1':{title:'经销商销量贡献占比明细',key:'salesRate',dir:'desc',fmt:S,target:'目标分散',headers:['经销商','销量贡献度','贡献排名','状态'],valCol:1,statusCol:3,getStatus:function(v){var n=parseFloat(v);return n>=90?'red':n>=85?'yellow':'green';}},
+'3':{title:'经销商亏损占比明细（从高到低）',key:'lossRate',dir:'desc',fmt:S,target:'≤10%',headers:['经销商','亏损占比','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){var n=parseFloat(v);return n>=15?'red':n>=10?'yellow':'green';}},
+'4':{title:'经销商经营风险明细（从高到低）',key:'anomaly',dir:'desc',fmt:function(v){return v;},target:'≤3项',headers:['经销商','异常项数','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){var n=parseInt(v);return n>=12?'red':n>=6?'yellow':'green';}},
+'5':{title:'经销商库存风险明细',key:'anomaly',dir:'desc',fmt:function(v){return v;},target:'库存天数<90天',headers:['经销商','综合风险指数','状态'],valCol:1,statusCol:2,getStatus:function(v){var n=parseInt(v);return n>=12?'red':n>=6?'yellow':'green';}},
+'6':{title:'经销商低NPS占比明细（从高到低）',key:'npsRate',dir:'desc',fmt:S,target:'≤10%',headers:['经销商','低NPS占比','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){var n=parseFloat(v);return n>=14?'red':n>=10?'yellow':'green';}},
+'7':{title:'经销商成交转化率达标明细（从低到高）',key:'convRate',dir:'asc',fmt:S,target:'≥90%',headers:['经销商','转化率','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){return v==='—'?'red':(parseFloat(v)>=90?'green':parseFloat(v)>=80?'yellow':'red');}}
+},
+'市场经理':{
+'0':{title:'经销商销量达成率明细（重点城市）',key:'salesRate',dir:'asc',fmt:S,target:'≥80%',headers:['经销商','销量达成率','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){return G(v,70,80);}},
+'1':{title:'经销商线索转化率明细',key:'convRate',dir:'asc',fmt:S,target:'≥80%',headers:['经销商','线索转化率','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){return G(v,70,80);}},
+'2':{title:'经销商订单达成率明细',key:'salesRate',dir:'asc',fmt:S,target:'≥90%',headers:['经销商','订单达成率','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){return G(v,80,90);}},
+'3':{title:'经销商渠道健康度明细',key:'anomaly',dir:'asc',fmt:function(v){return v;},target:'异常<6项',headers:['经销商','异常项数','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){var n=parseInt(v);return n>=12?'red':n>=6?'yellow':'green';}},
+'4':{title:'经销商销量达成率明细（竞品对标）',key:'salesRate',dir:'asc',fmt:S,target:'≥80%',headers:['经销商','销量达成率','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){return G(v,70,80);}},
+'5':{title:'经销商金融渗透率明细（预算执行）',key:'finRate',dir:'asc',fmt:S,target:'≥90%',headers:['经销商','金融渗透率','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){return G(v,80,90);}},
+'6':{title:'经销商NPS评分明细',key:'expNPS',dir:'asc',fmt:function(v){return v;},target:'≥80',headers:['经销商','NPS评分','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){var n=parseFloat(v);return n>=80?'green':n>=70?'yellow':'red';}},
+'7':{title:'经销商经营风险明细（岗位流失）',key:'anomaly',dir:'desc',fmt:function(v){return v;},target:'≤3项',headers:['经销商','异常项数','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){var n=parseInt(v);return n>=12?'red':n>=6?'yellow':'green';}}
+},
+'新媒体经理':{
+'0':{title:'经销商销量达成率明细',key:'salesRate',dir:'asc',fmt:S,target:'≥80%',headers:['经销商','销量达成率','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){return G(v,70,80);}},
+'1':{title:'经销商线索转化率明细',key:'convRate',dir:'asc',fmt:S,target:'≥85%',headers:['经销商','线索转化率','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){return G(v,75,85);}},
+'2':{title:'经销商订单达成率明细',key:'salesRate',dir:'asc',fmt:S,target:'≥90%',headers:['经销商','订单达成率','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){return G(v,80,90);}},
+'3':{title:'经销商线索转化率明细（达标分布）',key:'convRate',dir:'asc',fmt:S,target:'≥80%',headers:['经销商','线索转化率','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){return G(v,70,80);}},
+'5':{title:'经销商单车收益明细（成本相关）',key:'unitProfit',dir:'asc',fmt:function(v){return '¥'+v;},target:'≥¥20,000',headers:['经销商','单车收益','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){var n=parseFloat(v);return n>=20000?'green':n>=15000?'yellow':'red';}},
+'6':{title:'经销商NPS评分明细',key:'expNPS',dir:'asc',fmt:function(v){return v;},target:'≥90',headers:['经销商','NPS评分','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){var n=parseFloat(v);return n>=90?'green':n>=80?'yellow':'red';}},
+'7':{title:'经销商试驾率明细',key:'testDrive',dir:'asc',fmt:S,target:'≥25%',headers:['经销商','试驾率','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){return G(v,20,25);}},
+'8':{title:'经销商试驾率明细',key:'testDrive',dir:'asc',fmt:S,target:'≥30%',headers:['经销商','试驾率','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){return G(v,25,30);}},
+'9':{title:'经销商转化率明细',key:'convRate',dir:'asc',fmt:S,target:'≥8%',headers:['经销商','转化率','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){return G(v,5,8);}},
+'10':{title:'经销商转化率明细（达标分布）',key:'convRate',dir:'asc',fmt:S,target:'≥80%',headers:['经销商','转化率','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){return G(v,70,80);}},
+'12':{title:'经销商经营风险明细（岗位流失）',key:'anomaly',dir:'desc',fmt:function(v){return v;},target:'≤3项',headers:['经销商','异常项数','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){var n=parseInt(v);return n>=12?'red':n>=6?'yellow':'green';}}
+},
+'零售经理':{
+'0':{title:'经销商订单达成率明细（从低到高）',key:'salesRate',dir:'asc',fmt:S,target:'≥90%',headers:['经销商','订单达成率','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){return G(v,80,90);}},
+'1':{title:'经销商退订率明细',key:'lossRate',dir:'desc',fmt:S,target:'≤5%',headers:['经销商','退订率','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){var n=parseFloat(v);return n>=10?'red':n>=5?'yellow':'green';}},
+'2':{title:'经销商销量达成率明细',key:'salesRate',dir:'asc',fmt:S,target:'≥90%',headers:['经销商','销量达成率','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){return G(v,80,90);}},
+'3':{title:'经销商保险渗透率明细',key:'insRate',dir:'asc',fmt:S,target:'≥50%',headers:['经销商','保险渗透率','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){return G(v,40,50);}},
+'4':{title:'经销商金融渗透率明细',key:'finRate',dir:'asc',fmt:S,target:'≥50%',headers:['经销商','金融渗透率','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){return G(v,40,50);}},
+'5':{title:'经销商保险渗透率明细',key:'insRate',dir:'asc',fmt:S,target:'≥85%',headers:['经销商','保险渗透率','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){return G(v,75,85);}},
+'7':{title:'经销商单车收益明细',key:'unitProfit',dir:'asc',fmt:function(v){return '¥'+v;},target:'≥¥20,000',headers:['经销商','单车收益','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){var n=parseFloat(v);return n>=20000?'green':n>=15000?'yellow':'red';}},
+'8':{title:'经销商经营风险明细（高库存）',key:'anomaly',dir:'desc',fmt:function(v){return v;},target:'≤3项',headers:['经销商','异常项数','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){var n=parseInt(v);return n>=12?'red':n>=6?'yellow':'green';}},
+'9':{title:'经销商NPS评分明细',key:'expNPS',dir:'asc',fmt:function(v){return v;},target:'≥95',headers:['经销商','NPS评分','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){var n=parseFloat(v);return n>=95?'green':n>=85?'yellow':'red';}},
+'11':{title:'经销商试驾率明细',key:'testDrive',dir:'asc',fmt:S,target:'≥40%',headers:['经销商','试驾率','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){return G(v,30,40);}},
+'12':{title:'经销商试驾率明细',key:'testDrive',dir:'asc',fmt:S,target:'≥60%',headers:['经销商','试驾率','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){return G(v,50,60);}},
+'13':{title:'经销商转化率明细',key:'convRate',dir:'asc',fmt:S,target:'≥65%',headers:['经销商','转化率','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){return G(v,55,65);}},
+'15':{title:'经销商转化率明细（H级客户）',key:'convRate',dir:'asc',fmt:S,target:'≥40%',headers:['经销商','转化率','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){return G(v,30,40);}},
+'16':{title:'经销商经营风险明细（岗位流失）',key:'anomaly',dir:'desc',fmt:function(v){return v;},target:'≤3项',headers:['经销商','异常项数','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){var n=parseInt(v);return n>=12?'red':n>=6?'yellow':'green';}}
+},
+'培训经理':{
+'0':{title:'经销商销量达成率明细',key:'salesRate',dir:'asc',fmt:S,target:'≥75%',headers:['经销商','销量达成率','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){return G(v,65,75);}},
+'1':{title:'经销商NPS评分明细',key:'expNPS',dir:'asc',fmt:function(v){return v;},target:'≥90',headers:['经销商','NPS评分','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){var n=parseFloat(v);return n>=90?'green':n>=80?'yellow':'red';}},
+'2':{title:'经销商转化率明细',key:'convRate',dir:'asc',fmt:S,target:'≥85%',headers:['经销商','转化率','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){return G(v,75,85);}},
+'3':{title:'经销商销量达成率明细',key:'salesRate',dir:'asc',fmt:S,target:'≥80%',headers:['经销商','销量达成率','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){return G(v,70,80);}},
+'5':{title:'经销商销量达成率明细',key:'salesRate',dir:'asc',fmt:S,target:'≥90%',headers:['经销商','销量达成率','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){return G(v,80,90);}},
+'6':{title:'经销商销量达成率明细',key:'salesRate',dir:'asc',fmt:S,target:'≥85%',headers:['经销商','销量达成率','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){return G(v,75,85);}},
+'8':{title:'经销商销量达成率明细',key:'salesRate',dir:'asc',fmt:S,target:'≥90%',headers:['经销商','销量达成率','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){return G(v,80,90);}}
+},
+'渠道交付经理':{
+'0':{title:'经销商销量达成率明细',key:'salesRate',dir:'asc',fmt:S,target:'≥90%',headers:['经销商','销量达成率','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){return G(v,80,90);}},
+'2':{title:'经销商销量达成率明细',key:'salesRate',dir:'asc',fmt:S,target:'≥90%',headers:['经销商','销量达成率','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){return G(v,80,90);}},
+'3':{title:'经销商经营风险明细（库存深度）',key:'anomaly',dir:'desc',fmt:function(v){return v;},target:'≤3项',headers:['经销商','异常项数','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){var n=parseInt(v);return n>=12?'red':n>=6?'yellow':'green';}},
+'4':{title:'经销商异常项明细（超龄库存）',key:'anomaly',dir:'desc',fmt:function(v){return v;},target:'≤3项',headers:['经销商','异常项数','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){var n=parseInt(v);return n>=12?'red':n>=6?'yellow':'green';}},
+'7':{title:'经销商销量达成率明细',key:'salesRate',dir:'asc',fmt:S,target:'≥90%',headers:['经销商','销量达成率','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){return G(v,80,90);}},
+'8':{title:'经销商NPS评分明细',key:'expNPS',dir:'asc',fmt:function(v){return v;},target:'≥85',headers:['经销商','NPS评分','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){var n=parseFloat(v);return n>=85?'green':n>=75?'yellow':'red';}},
+'9':{title:'经销商NPS评分明细',key:'expNPS',dir:'asc',fmt:function(v){return v;},target:'≥90',headers:['经销商','NPS评分','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){var n=parseFloat(v);return n>=90?'green':n>=80?'yellow':'red';}},
+'10':{title:'经销商NPS评分明细',key:'expNPS',dir:'asc',fmt:function(v){return v;},target:'≥95',headers:['经销商','NPS评分','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){var n=parseFloat(v);return n>=95?'green':n>=85?'yellow':'red';}},
+'11':{title:'经销商经营风险明细（岗位流失）',key:'anomaly',dir:'desc',fmt:function(v){return v;},target:'≤3项',headers:['经销商','异常项数','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){var n=parseInt(v);return n>=12?'red':n>=6?'yellow':'green';}}
+},
+'运营支持':{
+'0':{title:'经销商销量达成率明细',key:'salesRate',dir:'asc',fmt:S,target:'≥90%',headers:['经销商','销量达成率','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){return G(v,80,90);}},
+'3':{title:'经销商销量达成率明细',key:'salesRate',dir:'asc',fmt:S,target:'≥90%',headers:['经销商','销量达成率','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){return G(v,80,90);}},
+'6':{title:'经销商亏损占比明细',key:'lossRate',dir:'desc',fmt:S,target:'≤20%',headers:['经销商','亏损占比','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){var n=parseFloat(v);return n>=20?'red':n>=10?'yellow':'green';}},
+'8':{title:'经销商经营风险明细（岗位流失）',key:'anomaly',dir:'desc',fmt:function(v){return v;},target:'≤3项',headers:['经销商','异常项数','目标','状态'],valCol:1,statusCol:3,getStatus:function(v){var n=parseInt(v);return n>=12?'red':n>=6?'yellow':'green';}}
+}};
+var cfg=configs[role]&&configs[role][String(index)];
+if(!cfg)return null;
+var list=[];
+for(var i=0;i<dealerList.length;i++){var name=dealerList[i].name;var kd=dealerKPIData[name];if(!kd)continue;var raw=kd[cfg.key];if(raw===undefined)continue;var val=cfg.fmt(raw);var status=cfg.getStatus(raw);list.push({name:name,val:val,status:status});}
+if(cfg.dir==='asc')list.sort(function(a,b){return parseFloat(a.val)-parseFloat(b.val);});
+else if(cfg.dir==='desc')list.sort(function(a,b){return parseFloat(b.val)-parseFloat(a.val);});
+var rows=[];
+for(var i=0;i<list.length;i++){var d=list[i];var st=cfg.getStatus(d.val);var cells=[d.name,d.val];if(cfg.headers.length>3)cells.push(cfg.target);cells.push(st);rows.push(cells);}
+if(cfg.target==='目标分散'){for(var i=0;i<rows.length;i++){rows[i][2]='#'+(i+1);}}
+return{title:cfg.title,headers:cfg.headers,rows:rows,valCol:cfg.valCol,statusCol:cfg.statusCol,getStatus:cfg.getStatus};}
+// ==================== NAVIGATION ====================
+function switchTaskLevel(level){
+  hideAllPages();
+  document.getElementById('page-tasks').classList.add('active');
+  const labels={P1:'P1 紧急',P2:'P2 重要',P3:'P3 常规'};
+  updateBreadcrumb('检核任务中心 — '+labels[level]);
+  updateSidebarActive('tasks-'+level);
+  renderTasks({priority:level,status:'all',role:'all'});
+}
+function switchPage(page){if(currentRole&&page!=='dashboard'&&page!=='tasks'){switchRolePage(currentRole);showToast('权限不足，仅可查看当前岗位数据');return;}const map={dashboard:'大区总驾驶舱',tasks:'检核任务中心',dealer:'经销商片区总览'};hideAllPages();let el=document.getElementById('page-'+page);if(el)el.classList.add('active');updateSidebarActive(page);if(page.startsWith('vehicle-')){const type=page.replace('vehicle-','');updateBreadcrumb('车型看板 — '+type+' 型');renderVehiclePage(type);}else if(page==='dealer'){document.getElementById('page-dealer-dashboard').classList.add('active');updateBreadcrumb('经销商片区总览');renderDealerDashboard();}else if(page==='dealer-generic'){updateBreadcrumb('经销商看板');}else{updateBreadcrumb(map[page]||page);if(page==='dashboard')renderDashboard();if(page==='tasks')renderTasks('all');}}
+
+function switchRolePage(role){if(currentRole&&role!==currentRole){switchRolePage(currentRole);showToast('权限不足，仅可查看当前岗位数据');return;}hideAllPages();document.getElementById('page-role').classList.add('active');document.getElementById('roleSelect').value=role;updateBreadcrumb(role+'看板');renderRolePage(role);updateSidebarActive('role',role);}
+function switchDealerRegion(region){if(currentRole){switchRolePage(currentRole);showToast('权限不足，仅可查看当前岗位数据');return;}hideAllPages();document.getElementById('page-dealer-region').classList.add('active');updateBreadcrumb('经销商看板 — '+region+'片区');document.querySelectorAll('.nav-dealer-subs').forEach(s=>s.classList.remove('open'));const sub=document.getElementById('sub-dealer-'+region);if(sub)sub.classList.add('open');renderDealerRegion(region);}
+
+
+function switchDealerPage(dealerId){if(currentRole){switchRolePage(currentRole);showToast('权限不足，仅可查看当前岗位数据');return;}hideAllPages();document.getElementById('page-dealer-generic').classList.add('active');const d=dealerList.find(x=>x.id===dealerId);const name=d?d.name:dealerId;updateBreadcrumb('经销商看板 — '+name);renderDealerPage(dealerId);updateSidebarActive('dealer',dealerId);}
+
+function toggleDealerSubs(region){const sub=document.getElementById('sub-dealer-'+region);if(sub){sub.classList.toggle('open');}}
+
+let currentRole=null;function onRoleSelectChange(){const role=document.getElementById('roleSelect').value;if(!role)return;if(role==='大区总'){currentRole=null;updateSidebarForRole();switchPage('dashboard');return;}currentRole=role;updateSidebarForRole();switchRolePage(role);}
+function updateSidebarForRole(){const groups=['complete','vehicle','dealer','roles'];groups.forEach(g=>{const el=document.querySelector(`[data-nav="${g}"]`);if(el&&el.parentElement)el.parentElement.style.display=currentRole?'none':'';});const rd=document.getElementById('nav-role-dashboard');if(currentRole){if(rd)rd.style.display='';expandGroup('sub-role-dashboard');const si=document.querySelector('#sub-role-dashboard .nav-sub-item');if(si)si.classList.add('active');}else{if(rd)rd.style.display='none';}}function hideAllPages(){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));}
+function updateBreadcrumb(text){document.getElementById('breadcrumb').innerHTML=`<span>大区经营诊断</span><span class="sep">/</span><span class="current">${text}</span>`;}
+
+function updateSidebarActive(page,extra){
+  document.querySelectorAll('.nav-group-header,.nav-sub-item,.nav-dealer-region').forEach(el=>el.classList.remove('active'));
+  document.querySelectorAll('.nav-sub').forEach(s=>s.classList.remove('open'));
+  document.querySelectorAll('.nav-group-header').forEach(h=>h.classList.remove('expanded'));
+  if(page==='dashboard'){
+    const el=document.querySelector('.nav-sub-item[data-nav="dashboard"]');if(el)el.classList.add('active');
+    expandGroup('sub-complete');
+  }else if(page==='tasks'){
+    const el=document.querySelector('.nav-sub-item[data-nav="tasks"]');if(el)el.classList.add('active');
+    expandGroup('sub-inspection');
+  }else if(page==='tasks-P1'||page==='tasks-P2'||page==='tasks-P3'){
+    const el=document.querySelector(`.nav-sub-item[data-nav="tasks-${page.split('-')[1]}"]`);if(el)el.classList.add('active');
+    expandGroup('sub-inspection');
+  }else if(page==='role'){
+    expandGroup('sub-role-dashboard');
+    const rd=document.querySelector('.nav-group-header[data-nav="role-dashboard"]');
+    if(rd)rd.classList.add('active');
+  }else if(page.startsWith('vehicle-')){
+    const vt=page.replace('vehicle-','');const el=document.querySelector(`.nav-sub-item[data-nav="vehicle-${vt}"]`);if(el)el.classList.add('active');
+    expandGroup('sub-vehicle');
+  }else if(page==='dealer'){
+    const header=document.querySelector('.nav-group-header[data-nav="dealer"]');if(header)header.classList.add('active');
+    if(extra){
+      if(dealerList.find(d=>d.id===extra)){
+        const el=document.querySelector(`.nav-sub-item[data-nav="dealer-${extra}"]`);if(el)el.classList.add('active');
+      }else{
+        const rel=document.querySelector(`.nav-dealer-region[data-nav="region-${extra}"]`);if(rel)rel.classList.add('active');
+      }
+    }
+    expandGroup('sub-dealer');
+  }else if(page==='dealer-generic'){
+    const el=document.querySelector(`.nav-sub-item[data-nav="dealer-${extra}"]`);if(el)el.classList.add('active');
+    expandGroup('sub-dealer');
+  }
+}
+
+function expandGroup(subId){
+  const sub=document.getElementById(subId);if(sub){sub.classList.add('open');}
+  const header=document.querySelector(`.nav-group-header[data-nav="${subId.replace('sub-','')}"]`);if(header){header.classList.add('expanded','active');}
+}
+
+function toggleNavGroup(header,subId){
+  const wasExpanded=header.classList.contains('expanded');
+  document.querySelectorAll('.nav-group-header').forEach(h=>h.classList.remove('expanded'));
+  document.querySelectorAll('.nav-sub').forEach(s=>s.classList.remove('open'));
+  if(!wasExpanded){
+    header.classList.add('expanded');
+    const sub=document.getElementById(subId);
+    if(sub)sub.classList.add('open');
+  }
+}
+
+// ==================== INIT ====================
+renderDashboard();
+</script>
+</body>
+</html>
