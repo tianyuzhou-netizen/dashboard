@@ -313,7 +313,16 @@ body{
   margin-bottom:22px;padding-bottom:14px;
   border-bottom:0.5px solid var(--border);
 }
+.drilldown-panel .panel-header-left{display:flex;align-items:center;gap:12px;}
 .drilldown-panel .panel-title{font-size:18px;font-weight:700;letter-spacing:-0.2px;}
+.drilldown-panel .panel-back{
+  background:none;border:none;font-size:12px;cursor:pointer;
+  color:var(--accent);white-space:nowrap;
+  display:inline-flex;align-items:center;gap:4px;
+  transition:opacity 0.15s var(--ease-apple);
+  flex-shrink:0;padding:4px 0;
+}
+.drilldown-panel .panel-back:hover{opacity:0.7;}
 .drilldown-panel .panel-task-link{
   font-size:12px;font-weight:500;color:var(--accent);cursor:pointer;
   margin-left:8px;padding:6px 16px;border-radius:20px;
@@ -828,7 +837,7 @@ body{
 <body>
 
 <aside class="sidebar">
-  <div class="sidebar-header"><div class="logo">DATA DASHBOARD</div><div class="title">汽车品牌 · 大区经营诊断</div><div class="version-badge">V2.2</div></div>
+  <div class="sidebar-header"><div class="logo">DATA DASHBOARD</div><div class="title">汽车品牌 · 大区经营诊断</div><div class="version-badge">V2.3</div></div>
   <nav class="sidebar-nav">
     <div class="nav-group">
       <div class="nav-group-header active expanded" data-nav="complete" onclick="toggleNavGroup(this,'sub-complete')"><span class="icon">&#128202;</span>完整数据看板<span class="arrow">&#9654;</span></div>
@@ -1134,7 +1143,7 @@ function secondaryDrilldown(type,key,label){
   const data=secondaryDrillData[type];
   if(!data||!data[key]){
     const panel=document.getElementById('drilldownPanel');
-    panel.innerHTML=`<div class="panel-header"><span class="panel-title">${label} — 三级明细</span><button class="panel-close" onclick="backToPrimaryDrilldown()">← 返回上级</button></div><div style="padding:40px;color:var(--text-muted);text-align:center;">该维度暂无更细粒度数据，请返回上级查看。</div>`;
+    panel.innerHTML=`<div class="panel-header"><div class="panel-header-left"><button class="panel-back" onclick="backToPrimaryDrilldown()">← 返回</button><span class="panel-title">${label} — 三级明细</span></div></div><div style="padding:40px;color:var(--text-muted);text-align:center;">该维度暂无更细粒度数据，请返回上级查看。</div>`;
     return;
   }
   const d=data[key];
@@ -1146,7 +1155,7 @@ function secondaryDrilldown(type,key,label){
     if(st)return `<td style="font-weight:600;color:var(--${st})">${cell}</td>`;
     return `<td>${cell}</td>`;
   }).join('')+'</tr>').join('');
-  panel.innerHTML=`<div class="panel-header"><span class="panel-title">${d.title}</span><button class="panel-close" onclick="backToPrimaryDrilldown()">← 返回上级</button></div><table class="data-table"><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table>${d.insight?insightBox(d.insight,'warn'):''}`;
+  panel.innerHTML=`<div class="panel-header"><div class="panel-header-left"><button class="panel-back" onclick="backToPrimaryDrilldown()">← 返回</button><span class="panel-title">${d.title}</span></div></div><table class="data-table"><thead><tr>${headers}</tr></thead><tbody>${rows}</tbody></table>${d.insight?insightBox(d.insight,'warn'):''}`;
 }
 function backToPrimaryDrilldown(){
   if(primaryDrillContext){
